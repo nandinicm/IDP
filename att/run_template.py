@@ -1,3 +1,4 @@
+import re
 import io
 from PIL import Image, ImageSequence
 from pdfplumber.pdf import PDF
@@ -327,6 +328,7 @@ if __name__ == "__main__":
     text_image_folder = root_folder + "text_image_folder/"
     fields_json_folder = root_folder + "fields_json/"
     fields_image_folder = root_folder + "fields_image/"
+    xml_result = root_folder + "xml_output/"
 
     if not os.path.isdir(fields_json_folder):
         os.mkdir(fields_json_folder)
@@ -355,19 +357,34 @@ if __name__ == "__main__":
     if not os.path.isdir(text_image_folder):
         os.mkdir(text_image_folder)
 
+    if not os.path.isdir(xml_result):
+        os.mkdir(xml_result)
+
+    invoice_header = ['account', 'address', 'amount_due', 'city', 'date', 'due_date', 'number', 'state', 'vendor_id',
+                      'zip']
+    invoice_info = ['total_current_charges', 'late_charges', 'PDB']
+    all_invoice_dict = dict()
+    invoice_details = dict()
+    elements_count = dict()
     for filepath in glob.glob(image_folder + "*"):
         # for filepath in glob.glob("/Users/sunilkumar/ocr/Table_Data/highpeak/*.pdf"):
+        invoice_dict = dict()
+        invoice_dict['invoice_info'] = dict()
+        invoice_dict['invoice_info']['charge'] = list()
+        invoice_dict['invoice_details'] = dict()
 
         with open(filepath, "rb") as binfile:
             pdf_words, document_name = fetch_words(binfile.read(), filepath)
 
             print("Fetched words", filepath, document_name)
-
+            invoice_details[filepath] = dict()
+            elements_count[filepath] = dict()
             for page_key, val in pdf_words.items():
                 page_file = document_name + "_" + page_key + ".json"
                 print(document_name, page_key)
                 im = val["numpy_image"]
-
+                invoice_details[filepath][page_key] = list()
+                elements_count[filepath][page_key] = dict()
                 if not run_evidence and os.path.isfile(evidence_folder + page_file):
                     print("Loading evidence from ", evidence_folder + page_file)
                     with open(evidence_folder + page_file, "r") as evfile:
@@ -467,7 +484,16 @@ if __name__ == "__main__":
 
                 for page_result in fields:
                     for field in page_result:
-                        print(field)
+                        if field[1] in invoice_header:
+                            invoice_dict[field[1]] = field[2]
+                        elif field[1] in invoice_info:
+                            invoice_dict['invoice_info']['charge'].append({'amount': field[2], 'type': field[1]})
+                        else:
+                            invoice_details[filepath][page_key].append([field[0][0][1], field[1], field[2]])
+                            if field[1] in elements_count[filepath][page_key]:
+                                elements_count[filepath][page_key][field[1]] += 1
+                            else:
+                                elements_count[filepath][page_key][field[1]] = 1
                         cv2.rectangle(field_im, field[0][0], field[0][1], (0, 0, 255), 2)
                 cv2.imwrite(fields_image_folder + document_name + "_" + page_key + ".jpg", field_im)
 
@@ -496,3 +522,43 @@ if __name__ == "__main__":
                 cv2.imwrite(assembled_image_folder + document_name + "_" + page_key + ".jpg", im)
                 image_with_text = write_text_on_image(deepcopy(im), word_patch_with_string)
                 cv2.imwrite(predicted_text_folder + document_name + "_" + page_key + ".jpg", image_with_text)
+            all_invoice_dict[filepath] = invoice_dict
+
+    for document in invoice_details:
+        invoice_dict = all_invoice_dict[document]
+        invoice_dict['invoice_details'][''] = dict()
+        invoice_dict['invoice_details']['']['charge'] = list()
+        for page in invoice_details[document]:
+            item_no = None
+            sorted_elements = sorted(invoice_details[document][page])
+            print(elements_count[document][page])
+            for element in sorted_elements:
+                print(element)
+                if (element[1] == 'Billed') or (element[1] == 'Charges'):
+                    if bool(re.search(r'\d', element[2])):
+                        item_no = element[2]
+                    continue
+                if item_no is None:
+                    invoice_dict['invoice_details']['']['charge'].append({'description': element[1],
+                                                                          'amount': element[2]})
+                    continue
+                if item_no not in invoice_dict['invoice_details']:
+                    invoice_dict['invoice_details'][item_no] = dict()
+                    invoice_dict['invoice_details'][item_no]['charge'] = list()
+                    invoice_dict['invoice_details'][item_no]['charge'].append({'description': element[1],
+                                                                               'amount': element[2]})
+                else:
+                    invoice_dict['invoice_details'][item_no]['charge'].append({'description': element[1],
+                                                                               'amount': element[2]})
+        print(json.dumps(invoice_dict, indent=4))
+        from src.json2xml import Json2xml
+
+        data = Json2xml.fromstring(json.dumps(invoice_dict)).data
+        data_object = Json2xml(data)
+        xml_output = data_object.json2xml()
+        print(xml_output)  # xml output
+        doc_name = os.path.split(document)[1].split('.')[0]
+        with open(xml_result + doc_name + ".xml", "w") as evfile:
+            evfile.write(xml_output)
+        evfile.close()
+    print(all_invoice_dict)
