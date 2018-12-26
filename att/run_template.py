@@ -532,6 +532,15 @@ if __name__ == "__main__":
             item_no = None
             sorted_elements = sorted(invoice_details[document][page])
             print(elements_count[document][page])
+            late_charges = 0
+            for info in invoice_dict['invoice_info']['charge']:
+                if 'late_charges' == info['type']:
+                    late_charges = info['amount']
+                    break
+            for info in invoice_dict['invoice_info']['charge']:
+                if 'PDB' == info['type']:
+                    info['PDB'] = info['amount'] - late_charges
+                    break
             for element in sorted_elements:
                 print(element)
                 if (element[1] == 'Billed') or (element[1] == 'Charges'):
