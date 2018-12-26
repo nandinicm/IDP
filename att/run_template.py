@@ -487,6 +487,8 @@ if __name__ == "__main__":
                         if field[1] in invoice_header:
                             invoice_dict[field[1]] = field[2]
                         elif field[1] in invoice_info:
+                            if field[2].startswith('.'):
+                                field[2] = '0' + field[2]
                             invoice_dict['invoice_info']['charge'].append({'amount': field[2], 'type': field[1]})
                         else:
                             invoice_details[filepath][page_key].append([field[0][0][1], field[1], field[2]])
@@ -539,7 +541,7 @@ if __name__ == "__main__":
                     break
             for info in invoice_dict['invoice_info']['charge']:
                 if 'PDB' == info['type']:
-                    info['PDB'] = info['amount'] - late_charges
+                    info['PDB'] = float(info['amount']) - float(late_charges)
                     break
             for element in sorted_elements:
                 print(element)
