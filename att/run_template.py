@@ -588,7 +588,7 @@ if __name__ == "__main__":
                     break
             for info in invoice_dict['invoice_info']['charge']:
                 if 'PDB' == info['type']:
-                    info['PDB'] = str(float(info['amount']) - float(late_charges))
+                    info['amount'] = str(float(info['amount']) - float(late_charges))
                     break
             for element in sorted_elements:
                 print(element)
