@@ -32,7 +32,7 @@ island_alg = "CONNECTED_COMPONENT"
 # island_alg ="HISTOGRAM"
 root_folder = "/home/rztuser/IDP/run_result/"
 image_folder = "/home/rztuser/IDP/images/"
-rule_json = "/home/rztuser/IDP/Jsons/att_rules_new.json"
+rule_json = "/home/rztuser/IDP/Jsons/att_rules_new1.json"
 run_evidence = False
 required_evidences = ["tesseract", "rzt_ocr"]
 
@@ -490,6 +490,8 @@ if __name__ == "__main__":
                         if a[1] == 'full_address':
                             full_address = a[2]
                     for field in page_result:
+                        if field[1] == 'full_address':
+                            continue
                         if field[1] in address_fields:
                             if (full_address is not None) and (field[2] in full_address):
                                 invoice_dict[field[1]] = field[2]
@@ -534,7 +536,7 @@ if __name__ == "__main__":
                             if 'CR' in field[2]:
                                 field[2] = '-' + field[2].replace('CR', '')
                             if ('Billed' == field[1]) or ('Charges' == field[1]):
-                                field[2] = re.sub('[\\W]', '', field[2])
+                                field[2] = re.sub('[\\_\\W]', '', field[2])
                             invoice_details[filepath][page_key].append([field[0][0][1], field[1], field[2]])
                             if field[1] in elements_count[filepath][page_key]:
                                 elements_count[filepath][page_key][field[1]] += 1
