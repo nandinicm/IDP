@@ -487,18 +487,16 @@ if __name__ == "__main__":
                 for page_result in fields:
                     full_address = ''
                     for a in page_result:
-                        if a[1] == 'full-address':
+                        if a[1] == 'full_address':
                             full_address = a[2]
                     for field in page_result:
                         if field[1] in address_fields:
                             if (full_address is not None) and (field[2] in full_address):
-                                print('-----yes')
                                 invoice_dict[field[1]] = field[2]
                                 if (field[1] == 'state') and (field[2] in state_list):
                                     invoice_dict['country'] = 'United States'
                                     invoice_dict['currency'] = 'USD'
                             elif field[1] not in invoice_dict:
-                                print('-----no')
                                 invoice_dict[field[1]] = field[2]
                                 if (field[1] == 'state') and (field[2] in state_list):
                                     invoice_dict['country'] = 'United States'
@@ -510,6 +508,9 @@ if __name__ == "__main__":
                                 field[2] = re.sub('[ $]', '', field[2])
                                 if field[2].startswith('.'):
                                     field[2] = '0' + field[2]
+                                if field[2].startswith('$.'):
+                                    field[2] = re.sub('[$]', '', field[2])
+                                    field[2] = '0' + field[2]
                                 if 'CR' in field[2]:
                                     field[2] = '-' + field[2].replace('CR', '')
                             if (field[1] == 'due_date') or (field[1] == 'date'):
@@ -518,14 +519,22 @@ if __name__ == "__main__":
                         elif field[1] in invoice_info:
                             if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
+                            if field[2].startswith('$.'):
+                                field[2] = re.sub('[$]', '', field[2])
+                                field[2] = '0' + field[2]
                             if 'CR' in field[2]:
                                 field[2] = '-' + field[2].replace('CR', '')
                             invoice_dict['invoice_info']['charge'].append({'amount': field[2], 'type': field[1]})
                         else:
                             if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
+                            if field[2].startswith('$.'):
+                                field[2] = re.sub('[$]', '', field[2])
+                                field[2] = '0' + field[2]
                             if 'CR' in field[2]:
                                 field[2] = '-' + field[2].replace('CR', '')
+                            if ('Billed' == field[1]) or ('Charges' == field[1]):
+                                field[2] = re.sub('[\\W]', '', field[2])
                             invoice_details[filepath][page_key].append([field[0][0][1], field[1], field[2]])
                             if field[1] in elements_count[filepath][page_key]:
                                 elements_count[filepath][page_key][field[1]] += 1
