@@ -1,5 +1,6 @@
 import re
 import io
+from dateutil.parser import parse
 from PIL import Image, ImageSequence
 from pdfplumber.pdf import PDF
 from pdf2image import convert_from_bytes
@@ -31,7 +32,7 @@ island_alg = "CONNECTED_COMPONENT"
 # island_alg ="HISTOGRAM"
 root_folder = "/home/rztuser/IDP/run_result/"
 image_folder = "/home/rztuser/IDP/images/"
-rule_json = "/home/rztuser/IDP/Jsons/att_rules.json"
+rule_json = "/home/rztuser/IDP/Jsons/att_rules_new.json"
 run_evidence = False
 required_evidences = ["tesseract", "rzt_ocr"]
 
@@ -116,7 +117,7 @@ def hypothesis(evidence, image, rules):
             structures = []
         all_structures.append(structures)
 
-    all_results = c_engine.run(imgs, all_structures)
+    all_results, tb = c_engine.run(imgs, all_structures)
 
     final_data = []
     for page, img in zip(all_results, imgs):
@@ -360,9 +361,10 @@ if __name__ == "__main__":
     if not os.path.isdir(xml_result):
         os.mkdir(xml_result)
 
-    invoice_header = ['account', 'address', 'amount_due', 'city', 'date', 'due_date', 'number', 'state', 'vendor_id',
-                      'zip']
+    address_fields = ['address', 'city', 'state', 'vendor_id', 'zip']
+    invoice_header = ['account', 'amount_due', 'date', 'due_date', 'number']
     invoice_info = ['total_current_charges', 'late_charges', 'PDB']
+    state_list = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","AS","DC","FM","GU","MH","MP","PW","PR","VI"]
     all_invoice_dict = dict()
     invoice_details = dict()
     elements_count = dict()
@@ -483,8 +485,29 @@ if __name__ == "__main__":
                 field_im = deepcopy(im)
 
                 for page_result in fields:
+                    full_address = ''
+                    for a in page_result:
+                        if a[1] == 'full-address':
+                            full_address = a[2]
                     for field in page_result:
-                        if field[1] in invoice_header:
+                        if field[1] in address_fields:
+                            if (full_address is not None) and (field[2] in full_address):
+                                invoice_dict[field[1]] = field[2]
+                                if (field[1] == 'state') and (field[2] in state_list):
+                                    invoice_dict['country'] = 'United States'
+                                    invoice_dict['currency'] = 'USD'
+                            elif field[1] not in invoice_dict:
+                                invoice_dict[field[1]] = field[2]
+                                if (field[1] == 'state') and (field[2] in state_list):
+                                    invoice_dict['country'] = 'United States'
+                                    invoice_dict['currency'] = 'USD'
+                        elif field[1] in invoice_header:
+                            if field[1] == 'account':
+                                field[2] = re.sub('[ -]', '', field[2])
+                            if field[1] == 'amount_due':
+                                field[2] = re.sub('[ $]', '', field[2])
+                            if (field[1] == 'due_date') or (field[1] == 'date'):
+                                field[2] = parse(field[2]).strftime('%m/%d/%Y')
                             invoice_dict[field[1]] = field[2]
                         elif field[1] in invoice_info:
                             if field[2].startswith('.'):
