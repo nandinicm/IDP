@@ -491,6 +491,7 @@ if __name__ == "__main__":
                             full_address = a[2]
                     for field in page_result:
                         if field[1] == 'full_address':
+                            cv2.rectangle(field_im, field[0][0], field[0][1], (0, 0, 255), 2)
                             continue
                         if field[1] in address_fields:
                             if (full_address is not None) and (field[2] in full_address):
