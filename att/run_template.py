@@ -574,6 +574,7 @@ if __name__ == "__main__":
             all_invoice_dict[filepath] = invoice_dict
 
     for document in invoice_details:
+        pdb_subtract = True
         invoice_dict = all_invoice_dict[document]
         invoice_dict['invoice_details'][''] = dict()
         invoice_dict['invoice_details']['']['charge'] = list()
@@ -582,14 +583,17 @@ if __name__ == "__main__":
             sorted_elements = sorted(invoice_details[document][page])
             print(elements_count[document][page])
             late_charges = 0
-            for info in invoice_dict['invoice_info']['charge']:
-                if 'late_charges' == info['type']:
-                    late_charges = info['amount']
-                    break
-            for info in invoice_dict['invoice_info']['charge']:
-                if 'PDB' == info['type']:
-                    info['amount'] = str(float(info['amount']) - float(late_charges))
-                    break
+            if pdb_subtract:
+                for info in invoice_dict['invoice_info']['charge']:
+                    if 'late_charges' == info['type']:
+                        late_charges = info['amount']
+                        break
+            if pdb_subtract:
+                for info in invoice_dict['invoice_info']['charge']:
+                    if 'PDB' == info['type']:
+                        info['amount'] = str(round((float(info['amount']) - float(late_charges)), 2))
+                        pdb_subtract = False
+                        break
             for element in sorted_elements:
                 print(element)
                 if (element[1] == 'Billed') or (element[1] == 'Charges'):
