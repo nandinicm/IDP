@@ -628,7 +628,7 @@ if __name__ == "__main__":
         data_object = Json2xml(data)
         xml_output = data_object.json2xml()
         print('\n\n')
-        print('XML Result-------------------------------------------------------')
+        print('XML Result for ' + document)
         print(xml_output)  # xml output
         doc_name = os.path.split(document)[1].split('.')[0]
         with open(xml_result + doc_name + ".xml", "w") as evfile:
