@@ -368,6 +368,7 @@ if __name__ == "__main__":
     all_invoice_dict = dict()
     invoice_details = dict()
     elements_count = dict()
+    confidence_score_map = dict()
     for filepath in glob.glob(image_folder + "*"):
         # for filepath in glob.glob("/Users/sunilkumar/ocr/Table_Data/highpeak/*.pdf"):
         invoice_dict = dict()
@@ -488,11 +489,19 @@ if __name__ == "__main__":
                     full_address = ''
                     for a in page_result:
                         if a[1] == 'full_address':
-                            full_address = a[2]
+                            if ('full_address' in confidence_score_map) and (confidence_score_map['full_address'] > a[3]):
+                                pass
+                            else:
+                                full_address = a[2]
+                                confidence_score_map[a[1]] = a[3]
                     for field in page_result:
                         if field[1] == 'full_address':
                             cv2.rectangle(field_im, field[0][0], field[0][1], (0, 0, 255), 2)
                             continue
+                        if (field[1] in confidence_score_map) and (confidence_score_map[field[1]] > field[3]):
+                            continue
+                        else:
+                            confidence_score_map[field[1]] = field[3]
                         if field[1] in address_fields:
                             if (full_address is not None) and (field[2] in full_address):
                                 invoice_dict[field[1]] = field[2]
@@ -618,6 +627,8 @@ if __name__ == "__main__":
         data = Json2xml.fromstring(json.dumps(invoice_dict)).data
         data_object = Json2xml(data)
         xml_output = data_object.json2xml()
+        print('\n\n')
+        print('XML Result-------------------------------------------------------')
         print(xml_output)  # xml output
         doc_name = os.path.split(document)[1].split('.')[0]
         with open(xml_result + doc_name + ".xml", "w") as evfile:
