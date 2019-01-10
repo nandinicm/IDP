@@ -520,8 +520,9 @@ if __name__ == "__main__":
                                 field[2] = re.sub('[ $]', '', field[2])
                                 if field[2].startswith('.'):
                                     field[2] = '0' + field[2]
-                                if field[2].startswith('$.'):
+                                if field[2].startswith('$'):
                                     field[2] = re.sub('[$]', '', field[2])
+                                if field[2].startswith('.'):
                                     field[2] = '0' + field[2]
                                 if 'CR' in field[2]:
                                     field[2] = '-' + field[2].replace('CR', '')
@@ -531,8 +532,9 @@ if __name__ == "__main__":
                         elif field[1] in invoice_info:
                             if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
-                            if field[2].startswith('$.'):
+                            if field[2].startswith('$'):
                                 field[2] = re.sub('[$]', '', field[2])
+                            if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
                             if 'CR' in field[2]:
                                 field[2] = '-' + field[2].replace('CR', '')
@@ -540,8 +542,9 @@ if __name__ == "__main__":
                         else:
                             if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
-                            if field[2].startswith('$.'):
+                            if field[2].startswith('$'):
                                 field[2] = re.sub('[$]', '', field[2])
+                            if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
                             if 'CR' in field[2]:
                                 field[2] = '-' + field[2].replace('CR', '')
@@ -629,7 +632,9 @@ if __name__ == "__main__":
         xml_output = data_object.json2xml()
         print('\n\n')
         print('XML Result for ' + document)
+        print('\n')
         print(xml_output)  # xml output
+        print('\n')
         doc_name = os.path.split(document)[1].split('.')[0]
         with open(xml_result + doc_name + ".xml", "w") as evfile:
             evfile.write(xml_output)
