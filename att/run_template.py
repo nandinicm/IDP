@@ -375,6 +375,7 @@ if __name__ == "__main__":
         invoice_dict['invoice_info'] = dict()
         invoice_dict['invoice_info']['charge'] = list()
         invoice_dict['invoice_details'] = dict()
+        invoice_info_in_doc = []
 
         with open(filepath, "rb") as binfile:
             pdf_words, document_name = fetch_words(binfile.read(), filepath)
@@ -529,7 +530,7 @@ if __name__ == "__main__":
                             if (field[1] == 'due_date') or (field[1] == 'date'):
                                 field[2] = parse(field[2]).strftime('%m/%d/%Y')
                             invoice_dict[field[1]] = field[2]
-                        elif field[1] in invoice_info:
+                        elif (field[1] in invoice_info) and (field[1] not in invoice_info_in_doc):
                             if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
                             if field[2].startswith('$'):
@@ -539,6 +540,7 @@ if __name__ == "__main__":
                             if 'CR' in field[2]:
                                 field[2] = '-' + field[2].replace('CR', '')
                             invoice_dict['invoice_info']['charge'].append({'amount': field[2], 'type': field[1]})
+                            invoice_info_in_doc.append(field[1])
                         else:
                             if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
