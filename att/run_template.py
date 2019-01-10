@@ -530,17 +530,18 @@ if __name__ == "__main__":
                             if (field[1] == 'due_date') or (field[1] == 'date'):
                                 field[2] = parse(field[2]).strftime('%m/%d/%Y')
                             invoice_dict[field[1]] = field[2]
-                        elif (field[1] in invoice_info) and (field[1] not in invoice_info_in_doc):
-                            if field[2].startswith('.'):
-                                field[2] = '0' + field[2]
-                            if field[2].startswith('$'):
-                                field[2] = re.sub('[$]', '', field[2])
-                            if field[2].startswith('.'):
-                                field[2] = '0' + field[2]
-                            if 'CR' in field[2]:
-                                field[2] = '-' + field[2].replace('CR', '')
-                            invoice_dict['invoice_info']['charge'].append({'amount': field[2], 'type': field[1]})
-                            invoice_info_in_doc.append(field[1])
+                        elif field[1] in invoice_info:
+                            if field[1] not in invoice_info_in_doc:
+                                if field[2].startswith('.'):
+                                    field[2] = '0' + field[2]
+                                if field[2].startswith('$'):
+                                    field[2] = re.sub('[$]', '', field[2])
+                                if field[2].startswith('.'):
+                                    field[2] = '0' + field[2]
+                                if 'CR' in field[2]:
+                                    field[2] = '-' + field[2].replace('CR', '')
+                                invoice_dict['invoice_info']['charge'].append({'amount': field[2], 'type': field[1]})
+                                invoice_info_in_doc.append(field[1])
                         else:
                             if field[2].startswith('.'):
                                 field[2] = '0' + field[2]
