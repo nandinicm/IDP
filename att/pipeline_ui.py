@@ -65,7 +65,6 @@ def write_text_on_image(img, word_patch_with_string, color=(0, 0, 0), fx=2, fy=2
 
 
 def format_data(all_results, tb, rules, pageno):
-    # print(tb)
     type_dict = {}
     for norm_tag, r in rules.items():
         if "has-key" in r["hints"]["what"].keys():
@@ -142,12 +141,7 @@ def hypothesis(evidence, image, rules, page_no):
     c_engine = ContentEngine(rules, what_rules, where_rules, what_group_rules)
 
     # Load the image!
-    # print(images_folder + file_name + ".jpg")
     imgs = [image]
-    # print(imgs)
-    # exit()
-
-    # Get word patches!
     word_patches_dict = {}
     for k, v in evidence['evidence_words'].items():
         c = v["assembled_result"][0]
@@ -167,17 +161,7 @@ def hypothesis(evidence, image, rules, page_no):
         all_structures.append(structures)
 
     all_results, tb = c_engine.run(imgs, all_structures)
-
-    final_data = []
-    for page, img in zip(all_results, imgs):
-        temp = []
-        for frame in page:
-            temp.append(
-                [(frame.coordinates[0], frame.coordinates[1]), frame.name, Word.join(*frame.contains['words']),
-                 frame.confidence])
-
-        final_data.append(temp)
-    return final_data, format_data(all_results, tb, rules, page_no)
+    return format_data(all_results, tb, rules, page_no)
 
 
 def tiff_to_jpg(binary_data: str):
@@ -237,7 +221,6 @@ def fetch_words(binary_input, filepath):
             image = np.asarray(image)
             text_patch_list = []
             image_area = image.shape[0] * image.shape[1]
-            print("image shape", image.shape)
             try:
                 is_scanned_image = False
                 if "image" in page.objects:
@@ -346,7 +329,6 @@ def draw_patches_and_write_image(im, text_patch_list, evidences, word_list_key, 
             tp = imutils.rotate_bound(tp, 90)
 
         for evidence_word in evidences[text_patch_key][word_list_key]:
-            print("evidence word", evidence_word)
             word = evidence_word[0]
             word_ = [word[0] + t[1], word[1] + t[0], word[2] + t[1], word[3] + t[0]]
             cv2.rectangle(img_with_patch, (t[0], t[1]), (t[2], t[3]), (255, 0, 0), 2)
@@ -410,47 +392,24 @@ if __name__ == "__main__":
     if not os.path.isdir(xml_result):
         os.mkdir(xml_result)
 
-    address_fields = ['address', 'city', 'state', 'vendor_id', 'zip']
-    invoice_header = ['account', 'amount_due', 'date', 'due_date', 'number']
-    invoice_info = ['total_current_charges', 'late_charges', 'PDB']
-    state_list = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","AS","DC","FM","GU","MH","MP","PW","PR","VI"]
-    all_invoice_dict = dict()
-    invoice_details = dict()
-    elements_count = dict()
-    confidence_score_map = dict()
     for filepath in glob.glob(image_folder + "*"):
-        # for filepath in glob.glob("/Users/sunilkumar/ocr/Table_Data/highpeak/*.pdf"):
-        invoice_dict = dict()
-        invoice_dict['invoice_info'] = dict()
-        invoice_dict['invoice_info']['charge'] = list()
-        invoice_dict['invoice_details'] = dict()
-        invoice_info_in_doc = []
 
         with open(filepath, "rb") as binfile:
             pdf_words, document_name = fetch_words(binfile.read(), filepath)
 
-            print("Fetched words", filepath, document_name)
-            invoice_details[filepath] = dict()
-            elements_count[filepath] = dict()
             for page_key, val in pdf_words.items():
                 page_file = document_name + "_" + page_key + ".json"
-                print(document_name, page_key)
                 im = val["numpy_image"]
-                invoice_details[filepath][page_key] = list()
-                elements_count[filepath][page_key] = dict()
                 if not run_evidence and os.path.isfile(evidence_folder + page_file):
-                    print("Loading evidence from ", evidence_folder + page_file)
                     with open(evidence_folder + page_file, "r") as evfile:
                         assembled_evidence = json.load(evfile)
                 else:
-                    print("Running evidence")
                     text_im = deepcopy(im)
                     evidence_list = []
                     text_patch_list = val["text_images"]
                     if "rzt_ocr" in required_evidences:
                         rzt_evidences = {}
                         for text_patch_key in text_patch_list:
-                            print(text_patch_key)
                             t = eval(text_patch_key.split("_")[0])
                             orientation = text_patch_key.split("_")[1]
                             tp = im[t[1]:t[3], t[0]:t[2]].copy()
@@ -469,7 +428,6 @@ if __name__ == "__main__":
 
                             rzt_evidence = RZT_OCR(image=tp.copy(), lstm_model=prediction_model,
                                                    word_detector=RZTWordDetector.get_words_using_word_space_cluster).get_word_coordinates_with_string()
-                            print(rzt_evidence)
 
                             rzt_evidences[text_patch_key] = rzt_evidence
                         # draw and write rzt images
@@ -494,11 +452,6 @@ if __name__ == "__main__":
 
                             if orientation == "V":
                                 tp = imutils.rotate_bound(tp, 90)
-
-                            # _, img_encoded = cv2.imencode('.jpg', tp)
-                            # response = requests.post(site + '/tesseract_evidence', data=img_encoded.tostring())
-                            # tesseract_json = response.json()
-
                             tesseract_json = tesseract_evidence(tp)
 
                             tesseract_evidences[text_patch_key] = {
@@ -519,7 +472,6 @@ if __name__ == "__main__":
 
                             if orientation == "V":
                                 tp = imutils.rotate_bound(tp, 90)
-                            # cv2.imwrite("/Users/sunilkumar/ocr/al_data/text_patches_r/" + text_patch_key + ".jpg",tp)
 
                             gv_evidence = Google_Cloud_Vision_OCR(image=tp).get_word_coordinate_with_string()
 
@@ -529,90 +481,18 @@ if __name__ == "__main__":
                     assembled_evidence = assemble_evidences(im, evidence_list, val["words"], text_patch_list,
                                                             required_evidences)
 
-                # assembled_evidence["lines"] = fetch_image_lines(im)
-                # assembled_evidence["tables"] = fetch_image_bordered_tables(im)
-                print(page_key, assembled_evidence)
-                fields, formatted_data = hypothesis(evidence=assembled_evidence, image=im, rules=rules,
-                                                    page_no=int(page_key.split('_')[-1]))
+                formatted_fields = hypothesis(evidence=assembled_evidence, image=im, rules=rules,
+                                              page_no=int(page_key.split('_')[-1]))
                 field_im = deepcopy(im)
 
-                for page_result in fields:
-                    full_address = ''
-                    for a in page_result:
-                        if a[1] == 'full_address':
-                            if ('full_address' in confidence_score_map) and (confidence_score_map['full_address'] > a[3]):
-                                pass
-                            else:
-                                full_address = a[2]
-                                confidence_score_map[a[1]] = a[3]
-                    for field in page_result:
-                        if field[1] == 'full_address':
-                            cv2.rectangle(field_im, field[0][0], field[0][1], (0, 0, 255), 2)
-                            continue
-                        if (field[1] in confidence_score_map) and (confidence_score_map[field[1]] > field[3]):
-                            continue
-                        else:
-                            confidence_score_map[field[1]] = field[3]
-                        if field[1] in address_fields:
-                            if (full_address is not None) and (field[2] in full_address):
-                                invoice_dict[field[1]] = field[2]
-                                if (field[1] == 'state') and (field[2] in state_list):
-                                    invoice_dict['country'] = 'United States'
-                                    invoice_dict['currency'] = 'USD'
-                            elif field[1] not in invoice_dict:
-                                invoice_dict[field[1]] = field[2]
-                                if (field[1] == 'state') and (field[2] in state_list):
-                                    invoice_dict['country'] = 'United States'
-                                    invoice_dict['currency'] = 'USD'
-                        elif field[1] in invoice_header:
-                            if field[1] == 'account':
-                                field[2] = re.sub('[ -]', '', field[2])
-                            if field[1] == 'amount_due':
-                                field[2] = re.sub('[ $]', '', field[2])
-                                if field[2].startswith('.'):
-                                    field[2] = '0' + field[2]
-                                if field[2].startswith('$'):
-                                    field[2] = re.sub('[$]', '', field[2])
-                                if field[2].startswith('.'):
-                                    field[2] = '0' + field[2]
-                                if 'CR' in field[2]:
-                                    field[2] = '-' + field[2].replace('CR', '')
-                            if (field[1] == 'due_date') or (field[1] == 'date'):
-                                field[2] = parse(field[2]).strftime('%m/%d/%Y')
-                            invoice_dict[field[1]] = field[2]
-                        elif field[1] in invoice_info:
-                            if field[1] not in invoice_info_in_doc:
-                                if field[2].startswith('.'):
-                                    field[2] = '0' + field[2]
-                                if field[2].startswith('$'):
-                                    field[2] = re.sub('[$]', '', field[2])
-                                if field[2].startswith('.'):
-                                    field[2] = '0' + field[2]
-                                if 'CR' in field[2]:
-                                    field[2] = '-' + field[2].replace('CR', '')
-                                invoice_dict['invoice_info']['charge'].append({'amount': field[2], 'type': field[1]})
-                                invoice_info_in_doc.append(field[1])
-                        else:
-                            if field[2].startswith('.'):
-                                field[2] = '0' + field[2]
-                            if field[2].startswith('$'):
-                                field[2] = re.sub('[$]', '', field[2])
-                            if field[2].startswith('.'):
-                                field[2] = '0' + field[2]
-                            if 'CR' in field[2]:
-                                field[2] = '-' + field[2].replace('CR', '')
-                            if ('Billed' == field[1]) or ('Charges' == field[1]):
-                                field[2] = re.sub('[\\_\\W]', '', field[2])
-                            invoice_details[filepath][page_key].append([field[0][0][1], field[1], field[2]])
-                            if field[1] in elements_count[filepath][page_key]:
-                                elements_count[filepath][page_key][field[1]] += 1
-                            else:
-                                elements_count[filepath][page_key][field[1]] = 1
-                        cv2.rectangle(field_im, field[0][0], field[0][1], (0, 0, 255), 2)
+                for field in formatted_fields['fields']:
+                    cv2.rectangle(field_im, (field['coord']['x'], field['coord']['y']), (
+                        field['coord']['x'] + field['coord']['width'], field['coord']['y'] + field['coord']['height']),
+                                  (0, 0, 255), 2)
                 cv2.imwrite(fields_image_folder + document_name + "_" + page_key + ".jpg", field_im)
 
                 with open(fields_json_folder + document_name + "_" + page_key + ".json", "w") as evfile:
-                    json.dump(fields, evfile)
+                    json.dump(formatted_fields, evfile)
 
                 color_ = (255, 0, 0)
                 thickness = 1
@@ -636,60 +516,3 @@ if __name__ == "__main__":
                 cv2.imwrite(assembled_image_folder + document_name + "_" + page_key + ".jpg", im)
                 image_with_text = write_text_on_image(deepcopy(im), word_patch_with_string)
                 cv2.imwrite(predicted_text_folder + document_name + "_" + page_key + ".jpg", image_with_text)
-            all_invoice_dict[filepath] = invoice_dict
-
-    for document in invoice_details:
-        pdb_subtract = True
-        invoice_dict = all_invoice_dict[document]
-        invoice_dict['invoice_details'][''] = dict()
-        invoice_dict['invoice_details']['']['charge'] = list()
-        for page in invoice_details[document]:
-            item_no = None
-            sorted_elements = sorted(invoice_details[document][page])
-            print(elements_count[document][page])
-            late_charges = 0
-            if pdb_subtract:
-                for info in invoice_dict['invoice_info']['charge']:
-                    if 'late_charges' == info['type']:
-                        late_charges = info['amount']
-                        break
-            if pdb_subtract:
-                for info in invoice_dict['invoice_info']['charge']:
-                    if 'PDB' == info['type']:
-                        info['amount'] = str(round((float(info['amount']) - float(late_charges)), 2))
-                        pdb_subtract = False
-                        break
-            for element in sorted_elements:
-                print(element)
-                if (element[1] == 'Billed') or (element[1] == 'Charges'):
-                    if bool(re.search(r'\d', element[2])):
-                        item_no = element[2]
-                    continue
-                if item_no is None:
-                    invoice_dict['invoice_details']['']['charge'].append({'description': element[1],
-                                                                          'amount': element[2]})
-                    continue
-                if item_no not in invoice_dict['invoice_details']:
-                    invoice_dict['invoice_details'][item_no] = dict()
-                    invoice_dict['invoice_details'][item_no]['charge'] = list()
-                    invoice_dict['invoice_details'][item_no]['charge'].append({'description': element[1],
-                                                                               'amount': element[2]})
-                else:
-                    invoice_dict['invoice_details'][item_no]['charge'].append({'description': element[1],
-                                                                               'amount': element[2]})
-        print(json.dumps(invoice_dict, indent=4))
-        from src.json2xml import Json2xml
-
-        data = Json2xml.fromstring(json.dumps(invoice_dict)).data
-        data_object = Json2xml(data)
-        xml_output = data_object.json2xml()
-        print('\n\n')
-        print('XML Result for ' + document)
-        print('\n')
-        print(xml_output)  # xml output
-        print('\n')
-        doc_name = os.path.split(document)[1].split('.')[0]
-        with open(xml_result + doc_name + ".xml", "w") as evfile:
-            evfile.write(xml_output)
-        evfile.close()
-    print(all_invoice_dict)
