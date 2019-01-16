@@ -176,8 +176,8 @@ if __name__ == "__main__":
         model_dir=None,
         session=session)
 
-    evidence_folder = root_folder + "evidence/"
-    text_image_folder = root_folder + "text_image_folder/"
+    evidence_folder = root_folder + "words/"
+    text_image_folder = root_folder + "images/"
 
     if not os.path.isdir(evidence_folder):
         os.mkdir(evidence_folder)
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         pdf_words, document_name = fetch_words(binfile.read(), image_path)
 
         for page_key, val in pdf_words.items():
-            page_file = document_name + "_" + page_key + ".json"
+            page_file = document_name + "_" + page_key.split('_')[-1] + ".json"
             im = val["numpy_image"]
             if not run_evidence and os.path.isfile(evidence_folder + page_file):
                 with open(evidence_folder + page_file, "r") as evfile:
@@ -266,6 +266,15 @@ if __name__ == "__main__":
                 cv2.imwrite(text_image_folder + document_name + "_" + page_key + ".jpg", text_im)
                 assembled_evidence = assemble_evidences(im, evidence_list, val["words"], text_patch_list,
                                                         required_evidences)
-
+            words_result = dict()
+            words_list = list()
+            words_result['pageNumber'] = int(page_key.split('_')[-1])
+            words_result['words'] = words_list
+            for word_info in assembled_evidence['evidence_words'].values():
+                w = word_info['assembled_result']
+                word_dict = {'confidenceScore': w[2], 'label': w[1],
+                             'coordinates': {'x': w[0][1], 'y': w[0][0], 'width': (int(w[0][3]) - int(w[0][1])),
+                                             'height': (int(w[0][2]) - int(w[0][0]))}}
+                words_list.append(word_dict)
             with open(evidence_folder + page_file, "w") as evfile:
-                json.dump(assembled_evidence, evfile)
+                json.dump(words_result, evfile)
