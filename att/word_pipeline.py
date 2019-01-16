@@ -163,8 +163,9 @@ def fetch_words(binary_input, filepath):
 
 if __name__ == "__main__":
 
-    root_folder = "/home/rztuser/IDP/test/"
-    image_path = "/home/rztuser/IDP/images/ALSAC_ATT_30968551013871_20180610_309685510106.pdf"
+    import sys
+    root_folder = sys.argv[1]
+    image_path = root_folder + sys.argv[2]
     run_evidence = False
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(0)
