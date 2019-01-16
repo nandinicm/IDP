@@ -164,7 +164,7 @@ def fetch_words(binary_input, filepath):
 if __name__ == "__main__":
 
     root_folder = "/home/rztuser/IDP/test/"
-    image_folder = "/home/rztuser/IDP/images/"
+    image_path = "/home/rztuser/IDP/images/ALSAC_ATT_30968551013871_20180610_309685510106.pdf"
     run_evidence = False
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(0)
@@ -184,89 +184,87 @@ if __name__ == "__main__":
     if not os.path.isdir(text_image_folder):
         os.mkdir(text_image_folder)
 
-    for filepath in glob.glob(image_folder + "*"):
+    with open(image_path, "rb") as binfile:
+        pdf_words, document_name = fetch_words(binfile.read(), image_path)
 
-        with open(filepath, "rb") as binfile:
-            pdf_words, document_name = fetch_words(binfile.read(), filepath)
+        for page_key, val in pdf_words.items():
+            page_file = document_name + "_" + page_key + ".json"
+            im = val["numpy_image"]
+            if not run_evidence and os.path.isfile(evidence_folder + page_file):
+                with open(evidence_folder + page_file, "r") as evfile:
+                    assembled_evidence = json.load(evfile)
+            else:
+                text_im = deepcopy(im)
+                evidence_list = []
+                text_patch_list = val["text_images"]
+                if "rzt_ocr" in required_evidences:
+                    rzt_evidences = {}
+                    for text_patch_key in text_patch_list:
+                        t = eval(text_patch_key.split("_")[0])
+                        orientation = text_patch_key.split("_")[1]
+                        tp = im[t[1]:t[3], t[0]:t[2]].copy()
+                        color_ = (0, 0, 255)
+                        if orientation == "V":
+                            color_ = (255, 0, 0)
 
-            for page_key, val in pdf_words.items():
-                page_file = document_name + "_" + page_key + ".json"
-                im = val["numpy_image"]
-                if not run_evidence and os.path.isfile(evidence_folder + page_file):
-                    with open(evidence_folder + page_file, "r") as evfile:
-                        assembled_evidence = json.load(evfile)
-                else:
-                    text_im = deepcopy(im)
-                    evidence_list = []
-                    text_patch_list = val["text_images"]
-                    if "rzt_ocr" in required_evidences:
-                        rzt_evidences = {}
-                        for text_patch_key in text_patch_list:
-                            t = eval(text_patch_key.split("_")[0])
-                            orientation = text_patch_key.split("_")[1]
-                            tp = im[t[1]:t[3], t[0]:t[2]].copy()
-                            color_ = (0, 0, 255)
-                            if orientation == "V":
-                                color_ = (255, 0, 0)
+                        image_gray = cv2.cvtColor(tp, cv2.COLOR_BGR2GRAY)
+                        image_bin = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+                        if cvutils.is_inverted_text_patch(image_bin):
+                            tp = (255 - tp).astype(np.uint8)
 
-                            image_gray = cv2.cvtColor(tp, cv2.COLOR_BGR2GRAY)
-                            image_bin = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-                            if cvutils.is_inverted_text_patch(image_bin):
-                                tp = (255 - tp).astype(np.uint8)
+                        if orientation == "V":
+                            tp = imutils.rotate_bound(tp, 90)
 
-                            if orientation == "V":
-                                tp = imutils.rotate_bound(tp, 90)
+                        rzt_evidence = RZT_OCR(image=tp.copy(), lstm_model=prediction_model,
+                                               word_detector=RZTWordDetector.get_words_using_word_space_cluster).get_word_coordinates_with_string()
 
-                            rzt_evidence = RZT_OCR(image=tp.copy(), lstm_model=prediction_model,
-                                                   word_detector=RZTWordDetector.get_words_using_word_space_cluster).get_word_coordinates_with_string()
+                        rzt_evidences[text_patch_key] = rzt_evidence
+                    evidence_list.append(rzt_evidences)
 
-                            rzt_evidences[text_patch_key] = rzt_evidence
-                        evidence_list.append(rzt_evidences)
+                if "tesseract" in required_evidences:
+                    tesseract_evidences = {}
+                    for text_patch_key in text_patch_list:
+                        t = eval(text_patch_key.split("_")[0])
+                        orientation = text_patch_key.split("_")[1]
 
-                    if "tesseract" in required_evidences:
-                        tesseract_evidences = {}
-                        for text_patch_key in text_patch_list:
-                            t = eval(text_patch_key.split("_")[0])
-                            orientation = text_patch_key.split("_")[1]
+                        tp = im[t[1]:t[3], t[0]:t[2]].copy()
 
-                            tp = im[t[1]:t[3], t[0]:t[2]].copy()
+                        image_gray = cv2.cvtColor(tp, cv2.COLOR_BGR2GRAY)
+                        image_bin = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+                        if cvutils.is_inverted_text_patch(image_bin):
+                            tp = (255 - tp).astype(np.uint8)
 
-                            image_gray = cv2.cvtColor(tp, cv2.COLOR_BGR2GRAY)
-                            image_bin = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-                            if cvutils.is_inverted_text_patch(image_bin):
-                                tp = (255 - tp).astype(np.uint8)
+                        if orientation == "V":
+                            tp = imutils.rotate_bound(tp, 90)
+                        tesseract_json = tesseract_evidence(tp)
 
-                            if orientation == "V":
-                                tp = imutils.rotate_bound(tp, 90)
-                            tesseract_json = tesseract_evidence(tp)
+                        tesseract_evidences[text_patch_key] = {
+                            "tesseract_words": tesseract_json["tesseract_content"]}
+                    evidence_list.append(tesseract_evidences)
+                if "google_cloud_vision" in required_evidences:
+                    gv_evidences = {}
+                    for text_patch_key in text_patch_list:
+                        t = eval(text_patch_key.split("_")[0])
+                        orientation = text_patch_key.split("_")[1]
 
-                            tesseract_evidences[text_patch_key] = {
-                                "tesseract_words": tesseract_json["tesseract_content"]}
-                        evidence_list.append(tesseract_evidences)
-                    if "google_cloud_vision" in required_evidences:
-                        gv_evidences = {}
-                        for text_patch_key in text_patch_list:
-                            t = eval(text_patch_key.split("_")[0])
-                            orientation = text_patch_key.split("_")[1]
+                        tp = im[t[1]:t[3], t[0]:t[2]].copy()
 
-                            tp = im[t[1]:t[3], t[0]:t[2]].copy()
+                        image_gray = cv2.cvtColor(tp, cv2.COLOR_BGR2GRAY)
+                        image_bin = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+                        if cvutils.is_inverted_text_patch(image_bin):
+                            tp = (255 - tp).astype(np.uint8)
 
-                            image_gray = cv2.cvtColor(tp, cv2.COLOR_BGR2GRAY)
-                            image_bin = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-                            if cvutils.is_inverted_text_patch(image_bin):
-                                tp = (255 - tp).astype(np.uint8)
+                        if orientation == "V":
+                            tp = imutils.rotate_bound(tp, 90)
 
-                            if orientation == "V":
-                                tp = imutils.rotate_bound(tp, 90)
+                        gv_evidence = Google_Cloud_Vision_OCR(image=tp).get_word_coordinate_with_string()
 
-                            gv_evidence = Google_Cloud_Vision_OCR(image=tp).get_word_coordinate_with_string()
+                        gv_evidences[text_patch_key] = gv_evidence
+                    evidence_list.append(gv_evidences)
 
-                            gv_evidences[text_patch_key] = gv_evidence
-                        evidence_list.append(gv_evidences)
+                cv2.imwrite(text_image_folder + document_name + "_" + page_key + ".jpg", text_im)
+                assembled_evidence = assemble_evidences(im, evidence_list, val["words"], text_patch_list,
+                                                        required_evidences)
 
-                    cv2.imwrite(text_image_folder + document_name + "_" + page_key + ".jpg", text_im)
-                    assembled_evidence = assemble_evidences(im, evidence_list, val["words"], text_patch_list,
-                                                            required_evidences)
-
-                with open(evidence_folder + page_file, "w") as evfile:
-                    json.dump(assembled_evidence, evfile)
+            with open(evidence_folder + page_file, "w") as evfile:
+                json.dump(assembled_evidence, evfile)
