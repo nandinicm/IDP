@@ -266,18 +266,18 @@ if __name__ == "__main__":
                 cv2.imwrite(text_image_folder + document_name + "_" + page_key + ".jpg", text_im)
                 assembled_evidence = assemble_evidences(im, evidence_list, val["words"], text_patch_list,
                                                         required_evidences)
-            words_result = dict()
-            words_list = list()
-            words_result['pageNumber'] = int(page_key.split('_')[-1])
-            words_result['words'] = words_list
-            total_confidence = 0
-            for word_info in assembled_evidence['evidence_words'].values():
-                w = word_info['assembled_result']
-                total_confidence += w[2]
-                word_dict = {'confidenceScore': w[2], 'label': w[1],
-                             'coordinates': {'x': w[0][1], 'y': w[0][0], 'width': (int(w[0][3]) - int(w[0][1])),
-                                             'height': (int(w[0][2]) - int(w[0][0]))}}
-                words_list.append(word_dict)
-            words_result['confidenceScore'] = total_confidence / len(words_list)
-            with open(evidence_folder + page_file, "w") as evfile:
-                json.dump(words_result, evfile)
+                words_result = dict()
+                words_list = list()
+                words_result['pageNumber'] = int(page_key.split('_')[-1])
+                words_result['words'] = words_list
+                total_confidence = 0
+                for word_info in assembled_evidence['evidence_words'].values():
+                    w = word_info['assembled_result']
+                    total_confidence += w[2]
+                    word_dict = {'confidenceScore': w[2], 'label': w[1],
+                                 'coordinates': {'x': w[0][1], 'y': w[0][0], 'width': (int(w[0][3]) - int(w[0][1])),
+                                                 'height': (int(w[0][2]) - int(w[0][0]))}}
+                    words_list.append(word_dict)
+                words_result['confidenceScore'] = total_confidence / len(words_list)
+                with open(evidence_folder + page_file, "w") as evfile:
+                    json.dump(words_result, evfile)
