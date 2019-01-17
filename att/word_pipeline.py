@@ -276,7 +276,7 @@ if __name__ == "__main__":
                     try:
                         total_confidence += w[2]
                     except IndexError:
-                        w[2] = 1
+                        w.append(1)
                         total_confidence += w[2]
                     word_dict = {'confidenceScore': w[2], 'label': w[1],
                                  'coordinates': {'x': w[0][1], 'y': w[0][0], 'width': (int(w[0][3]) - int(w[0][1])),
