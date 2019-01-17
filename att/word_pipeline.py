@@ -263,7 +263,7 @@ if __name__ == "__main__":
                         gv_evidences[text_patch_key] = gv_evidence
                     evidence_list.append(gv_evidences)
 
-                cv2.imwrite(text_image_folder + document_name + "_" + page_key + ".jpg", text_im)
+                cv2.imwrite(text_image_folder + document_name + "_" + page_key.split('_')[-1] + ".jpg", text_im)
                 assembled_evidence = assemble_evidences(im, evidence_list, val["words"], text_patch_list,
                                                         required_evidences)
                 words_result = dict()
