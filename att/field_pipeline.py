@@ -107,13 +107,13 @@ def hypothesis(evidence, image, rules, page_no):
     # Load the image!
     imgs = [image]
     word_patches_dict = {}
-    for k, v in evidence['evidence_words'].items():
-        c = v["assembled_result"][0]
-        label = v["assembled_result"][1]
+    for entry in evidence['words']:
+        c = entry["coordinates"]
+        label = entry['label']
 
         coordinates = (
-            c[0], c[1],
-            c[2], c[3]
+            c['x'], c['y'],
+            c['x'] + c['width'], c['y'] + c['height']
         )
         word_patches_dict[coordinates] = label
     all_structures = []
