@@ -130,9 +130,9 @@ def hypothesis(evidence, image, rules, page_no):
 
 if __name__ == "__main__":
 
-    root_folder = "/home/rztuser/IDP/test/"
-    rule_json = "/home/rztuser/IDP/Jsons/att_rules_new1.json"
-    run_evidence = False
+    import sys
+    root_folder = sys.argv[1]
+    rule_json = sys.argv[2]
 
     rules = json.load(open(rule_json))
 
@@ -144,9 +144,9 @@ if __name__ == "__main__":
         model_dir=None,
         session=session)
 
-    evidence_folder = root_folder + "evidence/"
-    text_image_folder = root_folder + "text_image_folder/"
-    fields_json_folder = root_folder + "fields_json/"
+    evidence_folder = root_folder + "words/"
+    text_image_folder = root_folder + "images/"
+    fields_json_folder = root_folder + "fields/"
 
     if not os.path.isdir(fields_json_folder):
         os.mkdir(fields_json_folder)
