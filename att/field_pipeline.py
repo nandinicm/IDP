@@ -112,8 +112,8 @@ def hypothesis(evidence, image, rules, page_no):
         label = entry['label']
 
         coordinates = (
-            c['x'], c['y'],
-            c['x'] + c['width'], c['y'] + c['height']
+            c['y'], c['x'],
+            c['y'] + c['height'], c['x'] + c['width']
         )
         word_patches_dict[coordinates] = label
     all_structures = []
