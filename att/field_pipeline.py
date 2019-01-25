@@ -108,7 +108,7 @@ def hypothesis(evidence, image, rules, page_no):
     imgs = [image]
     word_patches_dict = {}
     for entry in evidence['words']:
-        c = entry["coordinates"]
+        c = entry["coordinate"]
         label = entry['label']
 
         coordinates = (
