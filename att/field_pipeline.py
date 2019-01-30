@@ -26,6 +26,7 @@ from IDP_pipeline.ocr.ocr_entities.rzt_ocr.lstm_prediction_model import Predicti
 from IDP_pipeline.ocr.ocr_entities.google_cloud_vision.gv_ocr_entity import Google_Cloud_Vision_OCR
 import json
 import glob
+import re
 
 
 def format_data(all_results, tb, rules, pageno):
@@ -154,7 +155,7 @@ if __name__ == "__main__":
     for filepath in glob.glob(text_image_folder + "*"):
         im = cv2.imread(filepath)
         evidence_file = filepath.split('/')[-1]
-        evidence_file = evidence_file.replace(".jpg", ".json", 1)
+        evidence_file = re.sub('.jpg$', '.json', evidence_file)
         with open(evidence_folder + evidence_file) as f:
             assembled_evidence = json.load(f)
         formatted_fields = hypothesis(evidence=assembled_evidence, image=im, rules=rules,
