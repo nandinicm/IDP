@@ -207,6 +207,8 @@ def template_clustering(img_folder_path):
     for enum, filename in enumerate(filenames):
         try:
             pdf_ext = '.pdf'
+            if os.path.isdir(img_folder_path + '/' + filename):
+                continue
             if filename.endswith(pdf_ext):
                 if not os.path.exists(image_folder + 'images/'):
                     os.mkdir(image_folder + 'images/')
