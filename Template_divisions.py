@@ -200,6 +200,7 @@ def template_clustering(img_folder_path):
 
     filenames = os.listdir(img_path[0])
     errored = []
+    tmp_images = '/images/'
 
     """
     To run each image in detection
@@ -210,13 +211,13 @@ def template_clustering(img_folder_path):
             if os.path.isdir(img_folder_path + '/' + filename):
                 continue
             if filename.endswith(pdf_ext):
-                if not os.path.exists(image_folder + 'images/'):
-                    os.mkdir(image_folder + 'images/')
+                if not os.path.exists(image_folder + tmp_images):
+                    os.mkdir(image_folder + tmp_images)
                 jpg_file = filename.replace(pdf_ext, '.jpg')
-                if not os.path.exists(image_folder + 'images/' + jpg_file):
+                if not os.path.exists(image_folder + tmp_images + jpg_file):
                     pages = convert_from_path(image_folder + filename)
-                    pages[0].save(image_folder + 'images/' + jpg_file)
-                img_path[0] = img_folder_path + 'images/'
+                    pages[0].save(image_folder + tmp_images + jpg_file)
+                img_path[0] = img_folder_path + tmp_images
                 filename = jpg_file
             else:
                 img_path[0] = img_folder_path
@@ -231,6 +232,8 @@ def template_clustering(img_folder_path):
         except Exception as e:
             print("issue with This file", e)
             errored.append(filename)
+    with open(image_folder + tmp_images + 'error.txt') as file:
+        json.dump(errored, file)
 
     # """
     # Saving new data to json
