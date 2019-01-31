@@ -232,8 +232,12 @@ def template_clustering(img_folder_path):
         except Exception as e:
             print("issue with This file", e)
             errored.append(filename)
-    with open(image_folder + tmp_images + 'error.txt') as file:
-        json.dump(errored, file)
+
+    if os.path.exists(image_folder + tmp_images + 'error.txt'):
+        file = open(image_folder + tmp_images + 'error.txt', "r+")
+    else:
+        file = open(image_folder + tmp_images + 'error.txt', "w")
+    json.dump(errored, file)
 
     # """
     # Saving new data to json
