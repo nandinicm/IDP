@@ -146,11 +146,11 @@ def get_tables(table_json):
 
 if __name__ == '__main__':
 
-    image_folder = "/home/rztuser/IDP/tables/"
-    tfmodel = '/home/rztuser/IDP/tabletemaplates/frcnn_ami_100k/res101_faster_rcnn_iter_100000.ckpt'
+    image_folder = "/home/rztuser/IDP/tabletemplates/images/"
+    tfmodel = '/home/rztuser/IDP/tabletemplates/frcnn_ami_100k/res101_faster_rcnn_iter_100000.ckpt'
     test = True
 
-    test_data = ["138611511_6.jpg"]
+    test_data = ["138611511_5.jpg"]
 
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
     args = parse_args()
@@ -209,10 +209,10 @@ if __name__ == '__main__':
             points = calculate_all_points(((box[0], box[1]), (box[2], box[3]), 0))
             draw_polygon(image, points, (0,0,255),thickness=4)
             listed_tables.append([box[1], box[0], box[3], box[2]])
-        cv2.imwrite(image_folder+"tangotabletest1.png",image)
+        cv2.imwrite(image_folder+"result.png",image)
         cv2.waitKey(0)
         exit()
-        evidence = json.load(open("/home/rztuser/IDP/tabletemaplates/images/RW00275473_2017-12-01_2.json"))
+        evidence = json.load(open("/home/rztuser/IDP/tabletemplates/images/RW00275473_2017-12-01_2.json"))
 
         all_table_cell_info, table_json = getout_table_cells_information(listed_tables, image, evidence)
         for k, v in all_table_cell_info.items():
@@ -221,5 +221,5 @@ if __name__ == '__main__':
                 print(k1, v1)
                 k1 = [int(i) for i in k1.replace(" ", "")[1:-1].split(",")]
                 cv2.rectangle(image, (k1[1], k1[0]), (k1[3], k1[2]), (0, 0, 0), thickness=2)
-        cv2.imwrite(image_folder + 'res.png', image)
+        cv2.imwrite(image_folder + 'result.png', image)
         cv2.waitKey(0)
