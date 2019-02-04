@@ -3,13 +3,15 @@ from __future__ import division
 from __future__ import print_function
 
 # import _init_paths
+import sys
+
 from table_inference.lib.model.config import cfg
 from table_inference.lib.utils.nms import non_max_suppression
 
 import tensorflow as tf
 import numpy as np
 import os, cv2
-
+import re
 from table_inference.lib.nets.vgg16 import vgg16
 from table_inference.tools.demo import parse_args, demo
 from table_inference.Table_cell_data import getout_table_cells_information
@@ -21,7 +23,6 @@ from ocr_pattern_hypothesis.utils.frame_utils import calculate_all_points, draw_
 def ui_format(table_json):
     ui_data = []
     for table_id, data in table_json.items():
-        print("&&&&&&&&&&&&&&&&&&&&&&&")
         table_temp = {}
         table_temp["id"] = str(table_id)
         table_temp["confidenceScore"] = str(100)
@@ -77,10 +78,6 @@ def ui_format(table_json):
                                                 "height": str(cell_data["coord"][2] - cell_data["coord"][0])}
                     temp_row["cells"].append(temp_cell)
             table_temp["tableRows"].append(temp_row)
-        # print("final")
-        # print(table_temp)
-        # print(json.dumps(table_temp, separators=(',', ':')))
-        # json.dump(table_temp,"test_json.json")
         ui_data.append(table_temp)
     return {"tables": ui_data}
 
@@ -146,11 +143,9 @@ def get_tables(table_json):
 
 if __name__ == '__main__':
 
-    image_folder = "/home/rztuser/IDP/tabletemplates/images/"
+    base_folder = sys.argv[1]
+    image_folder = base_folder + '/images/'
     tfmodel = '/home/rztuser/IDP/tabletemplates/frcnn_ami_100k/res101_faster_rcnn_iter_100000.ckpt'
-    test = True
-
-    test_data = ["138611511_5.jpg"]
 
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
     args = parse_args()
@@ -179,21 +174,11 @@ if __name__ == '__main__':
     print('Loaded network {:s}'.format(tfmodel))
 
     for file in list(set(os.listdir(image_folder))):
-
-        if test:
-            if file not in test_data:
-                continue
-        else:
-            if file in test_data:
-                continue
         print(file)
         if file.startswith("."):
             continue
         try:
             image = cv2.imread(image_folder + file)
-            # if image == None:
-            #     print("None Image")
-            #     continue
         except FileNotFoundError:
             print("image not found")
             continue
@@ -209,10 +194,7 @@ if __name__ == '__main__':
             points = calculate_all_points(((box[0], box[1]), (box[2], box[3]), 0))
             draw_polygon(image, points, (0,0,255),thickness=4)
             listed_tables.append([box[1], box[0], box[3], box[2]])
-        cv2.imwrite(image_folder+"result.png",image)
-        cv2.waitKey(0)
-        exit()
-        evidence = json.load(open("/home/rztuser/IDP/tabletemplates/images/RW00275473_2017-12-01_2.json"))
+        evidence = json.load(open(base_folder + '/words/' + re.sub('.jpg$', '.json', file)))
 
         all_table_cell_info, table_json = getout_table_cells_information(listed_tables, image, evidence)
         for k, v in all_table_cell_info.items():
@@ -221,5 +203,5 @@ if __name__ == '__main__':
                 print(k1, v1)
                 k1 = [int(i) for i in k1.replace(" ", "")[1:-1].split(",")]
                 cv2.rectangle(image, (k1[1], k1[0]), (k1[3], k1[2]), (0, 0, 0), thickness=2)
-        cv2.imwrite(image_folder + 'result.png', image)
+        cv2.imwrite(base_folder + 'result.png', image)
         cv2.waitKey(0)
