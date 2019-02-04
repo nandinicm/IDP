@@ -148,7 +148,6 @@ if __name__ == '__main__':
     tfmodel = '/home/rztuser/IDP/tabletemplates/frcnn_ami_100k/res101_faster_rcnn_iter_100000.ckpt'
 
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
-    args = parse_args()
 
     # model path
     # demonet = args.demo_net
