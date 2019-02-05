@@ -280,7 +280,7 @@ if __name__ == "__main__":
                         w.append(1)
                         total_confidence += w[2]
                     word_dict = {'confidenceScore': w[2], 'label': w[1],
-                                 'coordinate': {'x': w[0][1], 'y': w[0][0], 'width': (int(w[0][3]) - int(w[0][1])),
+                                 'coordinates': {'x': w[0][1], 'y': w[0][0], 'width': (int(w[0][3]) - int(w[0][1])),
                                                  'height': (int(w[0][2]) - int(w[0][0]))}}
                     words_list.append(word_dict)
                 if words_list:
