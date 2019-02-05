@@ -36,8 +36,6 @@ def ui_format(table_json):
         table_temp["tableCols"] = []
         table_temp["tableRows"] = []
 
-        print(table_temp)
-
         for col_data in data["columns"]:
             col_temp = {}
             col_temp["id"] = str(col_data["index"])
@@ -149,6 +147,10 @@ if __name__ == '__main__':
 
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
 
+    tables_json_folder = base_folder + "/tables/"
+    if not os.path.isdir(tables_json_folder):
+        os.mkdir(tables_json_folder)
+
     # model path
     # demonet = args.demo_net
     # dataset = args.dataset
@@ -173,7 +175,6 @@ if __name__ == '__main__':
     print('Loaded network {:s}'.format(tfmodel))
 
     for file in list(set(os.listdir(image_folder))):
-        print(file)
         if file.startswith("."):
             continue
         try:
@@ -196,11 +197,10 @@ if __name__ == '__main__':
         evidence = json.load(open(base_folder + '/words/' + re.sub('.jpg$', '.json', file)))
 
         all_table_cell_info, table_json = getout_table_cells_information(listed_tables, image, evidence)
+        table_file = re.sub('.jpg$', '.json', file)
+        with open(tables_json_folder + table_file, "w") as tbfile:
+            json.dump(ui_format(table_json), tbfile)
         for k, v in all_table_cell_info.items():
-            print("Table :", k)
             for k1, v1 in v.items():
-                print(k1, v1)
                 k1 = [int(i) for i in k1.replace(" ", "")[1:-1].split(",")]
                 cv2.rectangle(image, (k1[1], k1[0]), (k1[3], k1[2]), (0, 0, 0), thickness=2)
-        cv2.imwrite(base_folder + 'result.png', image)
-        cv2.waitKey(0)
