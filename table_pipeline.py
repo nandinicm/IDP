@@ -61,7 +61,7 @@ def ui_format(table_json):
             temp_row["cells"] = []
             temp_row["tags"] = str(row_data["tags"])
             for cell_data in data["data"]:
-                if cell_data["row_index"] == str(row_data["index"]):
+                if str(cell_data["row_index"]) == str(row_data["index"]):
                     temp_cell = {}
                     temp_cell["id"] = str(cell_data["col_index"])
                     temp_cell["isNull"] = "false"
