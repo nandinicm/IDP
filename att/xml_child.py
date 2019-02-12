@@ -140,6 +140,5 @@ if invoice_details:
     xml_output += '</line>'
     xml_output += '</invoice_details>'
 xml_output += '</invoice>'
-print(xml_output)
 with open('/home/rztuser/test.xml', "w") as fs:
     fs.write(xml_output)
