@@ -698,6 +698,47 @@ def get_all_fields(mongo_ip, client_name, document_id):
 
 #######################################################################################################################
 
+def clean_tables(tables_data):
+    all_tables = []
+    merged_id = 0
+    for enum, each_page in enumerate(tables_data):
+        for each_table in each_page:
+            table = {"id": merged_id, 'tag': each_table['tag'], 'rows': []}
+            for each_row in each_table['tableRows']:
+                row_data = {}
+                for each_cell in each_row['cells']:
+                    row_data['col' + each_cell['_id'][-1]] = each_cell['value']
+                table['rows'].append(row_data)
+            merged_id = merged_id + 1
+
+            all_tables.append(table)
+    return all_tables
+
+
+def get_table_data_xml(mongo_ip, client_name, document_id):
+    client = MongoClient(mongo_ip)
+    db = client[client_name]
+    # relations = []
+    tables_data = []
+    fields = list(db.fields.find({"documentId": document_id}))
+    for each_field in fields:
+        tables_data.append(each_field['tables'])
+    all_tables = clean_tables(tables_data)
+    xml_output = ''
+    xml_output += '<invoice_info>'
+    for info in all_tables:
+        xml_output += '<line item="' + str(info['id']) + '">'
+        for col in info['rows']:
+            xml_output += '<charges'
+            for col_key, col_val in col.items():
+                xml_output += ' ' + col_key + ' = "' + col_val + '"'
+            xml_output += '/>'
+        xml_output += '</line>'
+    xml_output += '</invoice_info>'
+    print(xml_output)
+    return xml_output
+
+
 def get_child(all_children):
     all_third_lvl_children = []
     # print(type(all_children))
@@ -739,6 +780,7 @@ def combine_json_parse_xml(uploadpath):
             data_list.append(temp)
     data['all_Fields'] = get_all_fields(mongo_ip, client_name, document_id)
     data['page_Data'] = data_list
+    xml_op = get_table_data_xml(mongo_ip, client_name, document_id)
 
     lvl3_res = create_3_lvl_relation(data['all_Fields'])
     print(lvl3_res)
