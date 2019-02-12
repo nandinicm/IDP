@@ -1,7 +1,8 @@
+import sys
 import cv2
 import numpy as np
 from numpy import vectorize
-
+import time
 from IDP_pipeline.hypotheses.ocr_pattern_hypothesis.RND.Connected_islands import Connected_component_islands
 import os
 import json
@@ -220,7 +221,7 @@ def get_col_value(table_array: np.ndarray):
 
 
 """"
-Removing column if 2 or more created for same seperation 
+Removing column if 2 or more created for same seperation
 """
 
 
@@ -791,7 +792,7 @@ if __name__ == '__main__':
             all_data[0]['tables'].append(
                 each_table)  # print('FL:',len(all_data[0]['tables']))  # with open("UI_table_added_evidences.json", "w") as out_file:  #     json.dump(tables_data, out_file)\
         # all_data = list(db.fields.find({"documentId": documentId, "pageId": pageId}))
-        res = client[Loader.DATABASE]['fields'].update_one({"documentId": documentId, "pageId": pageId},
+        res = client[client_name]['fields'].update_one({"documentId": documentId, "pageId": pageId},
                                                            {'$set': all_data[0]}, upsert=True)
         print('Tables updated')
 
