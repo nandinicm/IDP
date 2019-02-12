@@ -22,7 +22,7 @@ import time
 import os
 
 mongo_ip = "mongodb://localhost"
-client_name = "tangoe"
+client_name = "tangoe1"
 
 """
 Created by @amandubey on 22/01/19
@@ -706,8 +706,18 @@ def clean_tables(tables_data):
             table = {"id": merged_id, 'tag': each_table['tag'], 'rows': []}
             for each_row in each_table['tableRows']:
                 row_data = {}
+                last_column=''
                 for each_cell in each_row['cells']:
-                    row_data['col' + each_cell['_id'][-1]] = each_cell['value']
+                    last_column=str('col' + each_cell['_id'][-1])
+                    if last_column=='col0':
+                        row_data['description'] = each_cell['value']
+                    else:
+                        row_data['col' + each_cell['_id'][-1]] = each_cell['value']
+
+                if len(row_data)>1:
+                    row_data['amount'] = row_data[last_column]
+                    row_data.pop(last_column)
+
                 table['rows'].append(row_data)
             merged_id = merged_id + 1
 
