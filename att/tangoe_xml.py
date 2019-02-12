@@ -724,19 +724,16 @@ def get_table_data_xml(mongo_ip, client_name, document_id):
     for each_field in fields:
         tables_data.append(each_field['tables'])
     all_tables = clean_tables(tables_data)
-    xml_output = ''
-    xml_output += '<invoice_info>'
+    tables_xml = ''
     for info in all_tables:
-        xml_output += '<line item="' + str(info['id']) + '">'
+        tables_xml += '<line item="' + str(info['id']) + '">'
         for col in info['rows']:
-            xml_output += '<charges'
+            tables_xml += '<charges'
             for col_key, col_val in col.items():
-                xml_output += ' ' + col_key + ' = "' + col_val + '"'
-            xml_output += '/>'
-        xml_output += '</line>'
-    xml_output += '</invoice_info>'
-    print(xml_output)
-    return xml_output
+                tables_xml += ' ' + col_key + ' = "' + col_val + '"'
+            tables_xml += '/>'
+        tables_xml += '</line>'
+    return tables_xml
 
 
 def get_child(all_children):
@@ -780,7 +777,7 @@ def combine_json_parse_xml(uploadpath):
             data_list.append(temp)
     data['all_Fields'] = get_all_fields(mongo_ip, client_name, document_id)
     data['page_Data'] = data_list
-    xml_op = get_table_data_xml(mongo_ip, client_name, document_id)
+    table_xml = get_table_data_xml(mongo_ip, client_name, document_id)
 
     lvl3_res = create_3_lvl_relation(data['all_Fields'])
     print(lvl3_res)
@@ -822,6 +819,7 @@ def combine_json_parse_xml(uploadpath):
         for detail in invoice_details:
             xml_output += detail
         xml_output += '</line>'
+        xml_output += table_xml
         xml_output += '</invoice_details>'
     xml_output += '</invoice>'
     with open(str(uploadpath) + "/" + "data.xml", "w") as fs:
