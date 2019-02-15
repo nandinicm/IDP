@@ -690,6 +690,7 @@ def get_all_fields(mongo_ip, client_name, document_id):
         collect_children(val["page_id"], val["relations"])
     id_value = 0
     clean_relationship_pairs(relationship_pairs)
+    print("Cleansed rellationship :", relationship_pairs)
     print("ALL CAPTURED FIELDS ARE ::", fields)
     for enum, val in enumerate(fields):
         id_value = collect_all_fileds(val["pageId"], val['fields'], id_value)
@@ -699,6 +700,15 @@ def get_all_fields(mongo_ip, client_name, document_id):
 
 #######################################################################################################################
 
+def remove_unicodes_here(val):
+    pattern = re.compile(
+        r"(?![A-Za-z]|\d|\s|\.|\:|\%|\\|\)|\(|\"|\@|\!|\#|\$|\%|\^|\*|\-|\+|\_|\=|\{|\}|\[|\]|\;|\'|\?|\>|\<|\,|\`|\~|\||\/).")
+    xx = pattern.split(val)
+    if len(xx) > 1:
+        val = ''.join(xx)
+    return val.strip()
+
+
 def clean_tables(tables_data):
     all_tables = []
     merged_id = 0
@@ -706,20 +716,13 @@ def clean_tables(tables_data):
         for each_table in each_page:
             table = {"id": merged_id, 'tag': each_table['tag'], 'rows': []}
             for each_row in each_table['tableRows']:
-                print("XML ROW DATA",each_row)
+                print("XML ROW DATA", each_row)
                 row_data = {}
                 last_column = ''
                 for each_cell in each_row['cells']:
-                    last_column = str('col' + each_cell['_id'][-1])
-                    if last_column == 'col0':
+                    if len(row_data.keys()) == 0:
                         row_data['description'] = each_cell['value']
-                    else:
-                        row_data['col' + each_cell['_id'][-1]] = each_cell['value']
-
-                if len(row_data) > 1:
-                    row_data['amount'] = row_data[last_column]
-                    row_data.pop(last_column)
-
+                    row_data['amount'] = each_cell['value']
                 table['rows'].append(row_data)
             merged_id = merged_id + 1
 
@@ -741,13 +744,15 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
         tables_xml += '<line tag_id="' + str(tag_id) + '" item="' + str(info['id']) + '">'
         tag_id = tag_id + 1
         for col in info['rows']:
-            tables_xml += '<charges tag_id="' + str(tag_id) + '"'
-            for col_key, col_val in col.items():
-                tables_xml += ' ' + col_key + ' = "' + col_val + '"'
-            tables_xml += '/>'
+            print("COLUMN IN TABLES", col)
+            tables_xml += '<charges tag_id="' + str(tag_id) + '" description=" ' + remove_unicodes_here(
+                col['description']) + '" amount=" ' + remove_unicodes_here(col['amount'])
+            # for col_key, col_val in col.items():
+            #     tables_xml += ' ' + col_key + ' = "' + col_val + '"'
+            tables_xml += '"/>'
             tag_id = tag_id + 1
         tables_xml += '</line>'
-    return tables_xml,tag_id
+    return tables_xml, tag_id
 
 
 def get_child(all_children):
@@ -774,8 +779,8 @@ def create_3_lvl_relation(all_fields):
             for second_lvl_child in each_child['children']:
                 if len(second_lvl_child) > 0:
                     second_lvl_child['children'] = get_child(second_lvl_child['children'])
-    #poped_enum.sort(reverse=True)
-    #for i in poped_enum:
+    # poped_enum.sort(reverse=True)
+    # for i in poped_enum:
     #    all_fields.pop(i)
     return all_fields
 
@@ -789,7 +794,7 @@ def get_all_relation_fields(all_children):
         all_relation_fields.append([each_child['tag'], each_child['value']])
 
         if len(each_child['children']) > 0:
-            all_relation_fields.extend(get_child(each_child['children']))
+            all_relation_fields.extend(get_all_relation_fields(each_child['children']))
             each_child['children'] = []
     return all_relation_fields
 
@@ -798,11 +803,12 @@ def insert_value_in_field_dict(secondary_dict, primary_dict, each_field):
     if each_field[0] in primary_dict.keys():
         if len(primary_dict[each_field[0]]) == 0:
             primary_dict[each_field[0]] = each_field[1]
-        elif primary_dict[each_field[0]] != each_field[1]:
-            if each_field[0] not in secondary_dict.key():
+        elif remove_unicodes_here(primary_dict[each_field[0]]) != remove_unicodes_here(each_field[1]):
+            # print("ZZZZZZZZZZZZZ",primary_dict[each_field[0]],each_field[1])
+            if each_field[0] not in secondary_dict.keys():
                 secondary_dict[each_field[0]] = []
-
-            secondary_dict[each_field[0]].append(each_field[1])
+            if each_field[1] not in secondary_dict[each_field[0]]:
+                secondary_dict[each_field[0]].append(each_field[1])
     return primary_dict, secondary_dict
 
 
@@ -810,7 +816,7 @@ def fetch_all_dict(invoice_info_dict, invoice_header_dict, lvl3_res):
     remaining_tags = {}
     secondary_dict = {}
     list_of_fields = []
-    print("XXXXXXXXXXXX",lvl3_res)
+    print("XXXXXXXXXXXX", lvl3_res)
     for field in lvl3_res:
         list_of_fields.extend(get_all_relation_fields(lvl3_res))
     print(list_of_fields)
@@ -837,12 +843,13 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
     tag_id = 1
     xml_output = "<invoice"
     for tag, value in invoice_header_dict.items():
-        xml_output += ' ' + str(tag) + '=' + '"' + str(value) + '"'
+        xml_output += ' ' + str(tag) + '=' + '"' + remove_unicodes_here(str(value)) + '"'
     xml_output += ' tag_id="' + str(tag_id) + '">'
     tag_id = tag_id + 1
     xml_output += '<invoice_info tag_id="' + str(tag_id) + '">'
     for tag, value in invoice_info_dict.items():
-        xml_output += '<charge tag_id="' + str(tag_id) + '" amount="' + value + '" type="' + tag + '"/>'
+        xml_output += '<charge tag_id="' + str(tag_id) + '" amount="' + remove_unicodes_here(
+            value) + '" type="' + tag + '"/>'
         tag_id = tag_id + 1
     xml_output += '</invoice_info> <invoice_details tag_id="' + str(tag_id) + '">'
 
@@ -851,12 +858,13 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
     xml_output += '<line tag_id="' + str(tag_id) + '" item="remaining_tags">'
     tag_id = tag_id + 1
     for tag, value in remaining_tags.items():
-        xml_output += '<remaining tag_id="' + str(tag_id) + '" ' + tag + '="' + value + '"/>'
+        xml_output += '<remaining tag_id="' + str(tag_id) + '" ' + tag + '="' + remove_unicodes_here(value) + '"/>'
         tag_id = tag_id + 1
     xml_output += '</line><line tag_id="' + str(tag_id) + '" item="duplicate_tags">'
     tag_id = tag_id + 1
     for tag, value in secondary_dict.items():
-        xml_output += '<duplicates tag_id="' + str(tag_id) + '" ' + tag + '="' + " / ".join(value) + '"/>'
+        xml_output += '<duplicates tag_id="' + str(tag_id) + '" ' + tag + '="' + remove_unicodes_here(
+            ' / '.join(value)) + '"/>'
         tag_id = tag_id + 1
     xml_output += '</line>'
     xml_output += '</invoice_details></invoice>'
@@ -888,9 +896,9 @@ def combine_json_parse_xml(uploadpath):
     lvl3_res = create_3_lvl_relation(data['all_Fields'])
     print(lvl3_res)
 
-    invoice_header_dict = {"invoice country": '', "zip": '', "state": '', "city": '', "address": '', "number": '',
-                           "due_date": '', "date": ''
-        , "amount_due": '', "account": '', "currency": '', "vendor_id": '', "incoive_type": '', "tag_id": ''}
+    invoice_header_dict = {"country": '', "zip": '', "state": '', "city": '', "address": '', "number": '',
+                           "due_date": '', "date": '', "amount_due": '', "account": '', "currency": '',
+                           "vendor_id": '', "invoice_type": ''}
 
     invoice_info_dict = {'total_current_charges': '', 'late_charges': '', 'PDB': ''}
     invoice_info_dict, invoice_header_dict, secondary_dict, remaining_tags = fetch_all_dict(invoice_info_dict,
@@ -898,7 +906,7 @@ def combine_json_parse_xml(uploadpath):
                                                                                             lvl3_res)
     xml_output = create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict, invoice_header_dict,
                                        secondary_dict, remaining_tags)
-    print("XML",xml_output)
+    print("XML", xml_output)
     with open(str(uploadpath) + "/" + "data.xml", "w") as fs:
         fs.write(xml_output)
 
