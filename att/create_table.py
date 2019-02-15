@@ -563,12 +563,13 @@ def create_json_structure(table_number, table_borders, border_dict, cell_words, 
 
 def ui_format(table_json):
     ui_data = []
+    print("table json data",table_json)
     for table_id, data in table_json.items():
 
         # print("&&&&&&&&&&&&&&&&&&&&&&&")
 
         table_temp = {}
-        table_temp["id"] = str(table_id)
+        table_temp["_id"] = str(table_id)
         table_temp["confidenceScore"] = str(100)
         table_temp["tag"] = str(data["table"]["tags"])
         table_temp["styles"] = {}
@@ -582,7 +583,7 @@ def ui_format(table_json):
 
         for col_data in data["columns"]:
             col_temp = {}
-            col_temp["id"] = str(col_data["index"])
+            col_temp["_id"] = str(col_data["index"])
             col_temp["tags"] = str(col_data["tags"])
             col_temp["coordinates"] = {"x": str(col_data["coord"][1]), "y": str(col_data["coord"][0]),
                                        "width": str(col_data["coord"][3] - col_data["coord"][1]),
@@ -593,7 +594,7 @@ def ui_format(table_json):
 
         for row_data in data["rows"]:
             temp_row = {}
-            temp_row["id"] = str(row_data["index"])
+            temp_row["_id"] = str(row_data["index"])
             temp_row["isHeader"] = "true" if row_data["index"] == 0 else "false"
             temp_row["coordinates"] = {"x": str(row_data["coord"][1]), "y": str(row_data["coord"][0]),
                                        "width": str(row_data["coord"][3] - row_data["coord"][1]),
@@ -606,7 +607,7 @@ def ui_format(table_json):
 
                 if str(cell_data["row_index"]) == str(row_data["index"]):
                     temp_cell = {}
-                    temp_cell["id"] = str(cell_data["col_index"])
+                    temp_cell["_id"] = str(cell_data["col_index"])
                     temp_cell["isNull"] = "false"
                     temp_cell["colSpan"] = "1"
                     temp_cell["rowSpan"] = "1"
@@ -617,8 +618,8 @@ def ui_format(table_json):
                                                 "width": str(cell_data["coord"][3] - cell_data["coord"][1]),
                                                 "height": str(cell_data["coord"][2] - cell_data["coord"][0])}
                     temp_row["cells"].append(temp_cell)
-                table_temp["tableRows"].append(
-                    temp_row)  # print("final")  # print(table_temp)  # print(json.dumps(table_temp, separators=(',', ':')))  # json.dump(table_temp,"test_json.json")
+                    print("INDEX ID :",temp_cell["_id"])
+            table_temp["tableRows"].append(temp_row)  # print("final")  # print(table_temp)  # print(json.dumps(table_temp, separators=(',', ':')))  # json.dump(table_temp,"test_json.json")
         ui_data.append(table_temp)  # print(table_temp)
     # print('#'*200)
     # print(ui_data)
@@ -626,8 +627,8 @@ def ui_format(table_json):
     # with open("UI_table_added_evidences.json", "w") as out_file:
     # json.dump(ui_data, out_file)
     # exit()
-    # print(ui_data)
-    return {"tables": ui_data}
+    print("showing ui data :",type(ui_data), ui_data)
+    return ui_data[0]
 
 
 """
@@ -697,6 +698,37 @@ def getout_table_cells_information(listed_tables, img, evidence):
     return all_table_cell_info, table_json
 
 
+# def create_from_given_data(structure, cell_coor):
+#     c = [0, 0, 0, 0]
+#     word_data = ""
+#     textline_words_list = []
+#     for enum, textline in enumerate(structure):
+#         c[0] = (textline.coordinates[0][1])
+#         c[1] = (textline.coordinates[0][0])
+#         c[2] = (textline.coordinates[1][1])
+#         c[3] = (textline.coordinates[1][0])
+#         # cv2.rectangle(img, (c[1], c[0]), (c[3], c[2]), (0, 0, 0), 3)  #####  Show Text line
+#
+#         if is_inside(c, cell_coor):
+#             for itme in (textline.contains["words"]):
+#                 if is_inside([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],
+#                               itme.coordinates[1][0]], cell_coor):
+#                     word_data += str(itme) + ' '
+#     return word_data
+
+
+def intersection_area_coord(rect1, rect2):
+    t = max((rect1[0], rect2[0]))
+    l = max((rect1[1], rect2[1]))
+    b = min((rect1[2], rect2[2]))
+    r = min((rect1[3], rect2[3]))
+    return [t, l, b, r]
+
+
+def area_of_patch(rect):
+    return ((rect[2] - rect[0]) * (rect[3] - rect[1]))
+
+
 def create_from_given_data(structure, cell_coor):
     c = [0, 0, 0, 0]
     word_data = ""
@@ -710,8 +742,11 @@ def create_from_given_data(structure, cell_coor):
 
         if is_inside(c, cell_coor):
             for itme in (textline.contains["words"]):
-                if is_inside([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],
-                              itme.coordinates[1][0]], cell_coor):
+                if (area_of_patch(
+                        intersection_area_coord([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],
+                                                 itme.coordinates[1][0]], cell_coor)) / area_of_patch(
+                    [itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],
+                     itme.coordinates[1][0]])) > .5:
                     word_data += str(itme) + ' '
     return word_data
 
@@ -744,12 +779,12 @@ if __name__ == '__main__':
     # with open(uploadpath + "pages/" + f) as ev:
     with open(os.getenv("HOME") + "/IDP/results/" + documentId + "/words/" + page_name + 'json') as ev:
         evidence = ast.literal_eval(ev.read())
-    print("DOc id:",documentId)
-    print("Page id:",pageId)
-    print('IMAGE  :',image.shape)
-    print("EVIDENCES :",evidence)
-    print("ALL DATA ",all_data[0])
-
+    print("DOc id:", documentId)
+    print("Page id:", pageId)
+    print('IMAGE  :', image.shape)
+    print("EVIDENCES :", evidence)
+    print("ALL DATA ", all_data[0])
+    new_created_tables=[]
     try:
 
         # print(len(all_data[0]),type(all_data[0]),all_data[0])
@@ -760,12 +795,13 @@ if __name__ == '__main__':
             if table['create_table']:
                 print("Create Table:", table['create_table'])
                 _, table_json = getout_table_cells_information([[table['coordinates']['y'], table['coordinates']['x'], (
-                            table['coordinates']['y'] + table['coordinates']['height']), (table['coordinates']['x'] +
-                                                                                          table['coordinates'][
-                                                                                              'width'])]], image,
+                        table['coordinates']['y'] + table['coordinates']['height']), (table['coordinates']['x'] +
+                                                                                      table['coordinates'][
+                                                                                          'width'])]], image,
                                                                evidence)
-                table = ui_format(table_json)
-                print(table)
+                new_created_tables.append(ui_format(table_json))
+                print("CREATED SHOWING TABLE :\n",new_created_tables[-1])
+                print("append done")
             else:
                 structure = get_textlines(evidence, image)
                 print("Create Table:", table['create_table'])
@@ -775,25 +811,28 @@ if __name__ == '__main__':
                         # print('BEFORE VAL :',each_cell['value'])
                         each_cell['value'] = create_from_given_data(structure, [each_cell['coordinates']['y'],
                                                                                 each_cell['coordinates']['x'], (
-                                                                                            each_cell['coordinates'][
-                                                                                                'y'] +
-                                                                                            each_cell['coordinates'][
-                                                                                                'height']), (
-                                                                                            each_cell['coordinates'][
-                                                                                                'x'] +
-                                                                                            each_cell['coordinates'][
-                                                                                                'width'])])
+                                                                                        each_cell['coordinates'][
+                                                                                            'y'] +
+                                                                                        each_cell['coordinates'][
+                                                                                            'height']), (
+                                                                                        each_cell['coordinates'][
+                                                                                            'x'] +
+                                                                                        each_cell['coordinates'][
+                                                                                            'width'])])
                         # print('AFTER VAL :',each_cell['value'])
                 print(table)
-        for each_table in new_tables:
+                new_created_tables.append(table)
+
+        for each_table in new_created_tables:
             # print(':::',type(all_data[0]['tables']))
             # print('LENGTH : :',len(all_data[0]['tables']))
             each_table['id'] = get_filename() + str(len(all_data[0]['tables']))
+            print("id changed",each_table['id'])
             all_data[0]['tables'].append(
                 each_table)  # print('FL:',len(all_data[0]['tables']))  # with open("UI_table_added_evidences.json", "w") as out_file:  #     json.dump(tables_data, out_file)\
         # all_data = list(db.fields.find({"documentId": documentId, "pageId": pageId}))
         res = client[client_name]['fields'].update_one({"documentId": documentId, "pageId": pageId},
-                                                           {'$set': all_data[0]}, upsert=True)
+                                                       {'$set': all_data[0]}, upsert=True)
         print('Tables updated')
 
     except Exception as e:
