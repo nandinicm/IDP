@@ -781,15 +781,12 @@ def get_child(all_children):
 
 
 def create_3_lvl_relation(all_fields):
-    print(";;;;", all_fields)
     poped_enum = []
     for enum, each_field in enumerate(all_fields):
         print(type(each_field['children']), each_field)
         for each_child in each_field['children']:
             # if each_child['children']>0:
-            print("LVL 2", each_child)
             if len(each_child['children']) > 0:
-                print(":sssssssss")
                 each_child['children'] = get_child(each_child['children'])
             # for second_lvl_child in each_child['children']:
             #    print("SECOND LVL CHILD",second_lvl_child)
@@ -799,7 +796,6 @@ def create_3_lvl_relation(all_fields):
     # poped_enum.sort(reverse=True)
     # for i in poped_enum:
     #   all_fields.pop(i)
-    print("LVL#", all_fields)
     return all_fields
 
 
