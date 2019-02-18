@@ -779,11 +779,11 @@ if __name__ == '__main__':
     # with open(uploadpath + "pages/" + f) as ev:
     with open(os.getenv("HOME") + "/IDP/results/" + documentId + "/words/" + page_name + 'json') as ev:
         evidence = ast.literal_eval(ev.read())
-    print("DOc id:", documentId)
-    print("Page id:", pageId)
-    print('IMAGE  :', image.shape)
-    print("EVIDENCES :", evidence)
-    print("ALL DATA ", all_data[0])
+    # print("DOc id:", documentId)
+    # print("Page id:", pageId)
+    # print('IMAGE  :', image.shape)
+    # print("EVIDENCES :", evidence)
+    # print("ALL DATA ", all_data[0])
     new_created_tables=[]
     try:
 
