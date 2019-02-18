@@ -652,10 +652,11 @@ def clean_links(relationship_pairs, links_list):
 
 def collect_all_fileds(page_id, fields, id_value):
     for each_data in fields:
-        # print(each_data)
+        print(each_data)
         each_data['children'] = []
         id_value = id_value + 1
         key_val = ast.literal_eval(each_data['value'])
+        print(type(key_val), key_val)
         dict_xml = {'id': str(id_value), 'tag': each_data['tag'], 'type': each_data['type'], 'key': key_val[0]['key'],
                     'value': key_val[1]['key'], 'children': []}
         all_fields[page_id + '_' + each_data['_id']] = dict_xml
@@ -673,9 +674,9 @@ def create_relation_fields(all_fields, relationship_pairs):
     for popid in poped_ids:
         all_fields.pop(popid)
     print("RELATED FIELDS SHOWING HERE :", all_fields)
-    for k, v in all_fields.items():
-        field_list.append(v)
-    print("ALL RELATED FIELDS SHOWING HERE :", field_list)
+    # for k, v in all_fields.items():
+    #     field_list.append(v)
+    # print("ALL RELATED FIELDS SHOWING HERE :", all_fields)
     return field_list
 
 
@@ -684,14 +685,14 @@ def get_all_fields(mongo_ip, client_name, document_id):
     db = client[client_name]
     relations = list(db.pageRelations.find({"document_id": document_id}))
     fields = list(db.fields.find({"documentId": document_id}))
-    # print("DOCUMENT DETAILS:::::::", document_id)
-    # print("ALL REALTIONS	:	", relations)
+    print("DOCUMENT DETAILS:::::::", document_id)
+    print("ALL REALTIONS	:	", relations)
     for enum, val in enumerate(relations):
         collect_children(val["page_id"], val["relations"])
     id_value = 0
     clean_relationship_pairs(relationship_pairs)
-    # print("Cleansed rellationship :", relationship_pairs)
-    # print("ALL CAPTURED FIELDS ARE ::", fields)
+    print("Cleansed rellationship :", relationship_pairs)
+    print("ALL CAPTURED FIELDS ARE ::", fields)
     for enum, val in enumerate(fields):
         id_value = collect_all_fileds(val["pageId"], val['fields'], id_value)
     field_list = create_relation_fields(all_fields, relationship_pairs)
@@ -716,7 +717,7 @@ def clean_tables(tables_data):
         for each_table in each_page:
             table = {"id": merged_id, 'tag': each_table['tag'], 'rows': []}
             for each_row in each_table['tableRows']:
-                # print("XML ROW DATA", each_row)
+                print("XML ROW DATA", each_row)
                 row_data = {}
                 last_column = ''
                 for each_cell in each_row['cells']:
@@ -744,7 +745,7 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
         tables_xml += '<line tag_id="' + str(tag_id) + '" item="' + str(info['id']) + '">'
         tag_id = tag_id + 1
         for col in info['rows']:
-            # print("COLUMN IN TABLES", col)
+            print("COLUMN IN TABLES", col)
             tables_xml += '<charges tag_id="' + str(tag_id) + '" description=" ' + remove_unicodes_here(
                 col['description']) + '" amount=" ' + remove_unicodes_here(col['amount'])
             # for col_key, col_val in col.items():
@@ -758,8 +759,13 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
 def fetch_all_parents(all_fields, relationship_pairs):
     parents_list = []
     rel_based_id = 1
+    new_fields = {}
+    print("relationship_pairs", relationship_pairs)
+    print("field_pairs", all_fields)
     for k, each_rel in relationship_pairs.items():
-        parents_list.append(each_rel['parent'])
+        print("EACH__RELATION", each_rel)
+        new_fields[rel_based_id] = all_fields[each_rel['parent']]
+        each_rel['parent'] = rel_based_id
     poping_list = []
     for key, field in all_fields.items():
         if key not in parents_list:
@@ -771,6 +777,8 @@ def fetch_all_parents(all_fields, relationship_pairs):
 
 def get_child(all_children):
     all_third_lvl_children = []
+    # print(type(all_children))
+    # print(all_children)
     for each_child in all_children:
         all_third_lvl_children.append(each_child)
 
@@ -781,31 +789,26 @@ def get_child(all_children):
 
 
 def create_3_lvl_relation(all_fields):
-    print(";;;;", all_fields)
     poped_enum = []
     for enum, each_field in enumerate(all_fields):
-        print(type(each_field['children']), each_field)
+        if len(each_field['children']) == 0:
+            poped_enum.append(enum)
+            continue
         for each_child in each_field['children']:
             # if each_child['children']>0:
-            print("LVL 2", each_child)
-            if len(each_child['children']) > 0:
-                print(":sssssssss")
-                each_child['children'] = get_child(each_child['children'])
-            # for second_lvl_child in each_child['children']:
-            #    print("SECOND LVL CHILD",second_lvl_child)
-            #    if len(second_lvl_child) > 0:
-            #        print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
-            #        second_lvl_child['children'] = get_child(second_lvl_child['children'])
+            for second_lvl_child in each_child['children']:
+                if len(second_lvl_child) > 0:
+                    second_lvl_child['children'] = get_child(second_lvl_child['children'])
     # poped_enum.sort(reverse=True)
     # for i in poped_enum:
-    #   all_fields.pop(i)
-    print("LVL#", all_fields)
+    #    all_fields.pop(i)
     return all_fields
 
 
 def get_all_relation_fields(all_children):
     all_relation_fields = []
-    # print(all_children)
+    # print(type(all_children))
+    print(all_children)
 
     for each_child in all_children:
         all_relation_fields.append([each_child['tag'], each_child['value']])
@@ -833,9 +836,10 @@ def fetch_all_dict(invoice_info_dict, invoice_header_dict, lvl3_res):
     remaining_tags = {}
     secondary_dict = {}
     list_of_fields = []
+    print("XXXXXXXXXXXX", lvl3_res)
     for field in lvl3_res:
         list_of_fields.extend(get_all_relation_fields(lvl3_res))
-    # print("list_of_fields",list_of_fields)
+    print(list_of_fields)
     for each_field in list_of_fields:
         if each_field[0] in invoice_header_dict.keys():
             invoice_header_dict, secondary_dict = insert_value_in_field_dict(secondary_dict, invoice_header_dict,
@@ -910,7 +914,7 @@ def combine_json_parse_xml(uploadpath):
     # table_xml = get_table_data_xml(mongo_ip, client_name, document_id)
 
     lvl3_res = create_3_lvl_relation(data['all_Fields'])
-    print("lvl3_res", lvl3_res)
+    print(lvl3_res)
 
     invoice_header_dict = {"country": '', "zip": '', "state": '', "city": '', "address": '', "number": '',
                            "due_date": '', "date": '', "amount_due": '', "account": '', "currency": '',
