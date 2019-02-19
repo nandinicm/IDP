@@ -6,6 +6,7 @@ import sys
 from copy import deepcopy
 from ocr_pattern_hypothesis.utils import frame_utils
 from ocr_pattern_hypothesis.frames.basic_frames import Word
+from copy import deepcopy
 
 # STRUCTURE FRAMES
 from ocr_pattern_hypothesis.frames.structure.engine import StructureEngine
@@ -166,9 +167,12 @@ def mark_positions(image):
 
 def filter_by_coordinates(field_list,rules,position_clause):
     poped_enum=[]
+    print("ALLRULES",rules)
     for field_enum,each_field in enumerate(field_list):
         inside_coordinates_flag=False
-        # print("FIELDS ::",each_field)
+        #print("FIELDS ::",each_field)
+        #print("EACH_RULES :",each_field['tag'])
+        #print(rules[each_field['tag']]['hints']['where'])
         # print("ALL",position_clause['all'])
         for each_pos in rules[each_field['tag']]['hints']['where']['position']['values']:
             if is_inside(position_clause[each_pos], [each_field['coord']['y'], each_field['coord']['x'],
@@ -182,7 +186,7 @@ def filter_by_coordinates(field_list,rules,position_clause):
     # print('POPED ENUM',poped_enum)
     for enum in poped_enum:
         field_list.pop(enum)
-    # print(field_list)
+    #print("FIELD_LIST ARE ",field_list)
     return field_list
 
 
@@ -200,16 +204,30 @@ if __name__ == "__main__":
     output_folder = input_list[1] + "fields/"
     rule_json = input_list[1] + "hints.json"
 
+    if not os.path.isdir(output_folder):
+        os.mkdir(output_folder)
+
     # with open(rule_json) as fp:
     #     str_ = fp.readline()
-    print(rule_json)
+    #print("RULE HERE:",rule_json)
     rules = json.load(open(rule_json))
+    #print(rules)
+    rules2=deepcopy(rules)
+
+    for k,v in rules.items():
+        v['hints']['where']={}
+    # rules[]['where']={}
+    #print("RULE1 :",rules)
+    #print("RULE2 :",rules2)
 
     # print(rules.keys())
     # exit()
 
     # doc_level_hypothesis=[]
+    page_count=1
     for evidence_name in os.listdir(evidence_folder):
+        print("PAGE COUNT :",page_count)
+        page_count=page_count+1
         if evidence_name.startswith("."):
             continue
 
@@ -218,23 +236,17 @@ if __name__ == "__main__":
             str_evidence = fp.readline()
 
         evidence = ast.literal_eval(str_evidence)
-        print(evidence)
-        print("lll" + image_folder + evidence_name[:-4].replace("_page", "") + "jpg")
+        #print("EVIDENCES :",evidence)
+        print("img: " + image_folder + evidence_name[:-4].replace("_page", "") + "jpg")
         im = cv2.imread(image_folder + evidence_name[:-4].replace("_page", "") + "jpg")
-        print("startloading")
-        print(type(im))
-        print("image loaded")
-        rules2=deepcopy(rules)
-        print(rules2)
+        #print("startloading")
+        #print(type(im))
+        #print("image loaded")
 
-        for k,v in rules.items():
-            v['hints']['where']={}
-        # rules[]['where']={}
-        print(rules)
         # page_results = {"pageNumber": 0, "fields": [{"id": 0, "tag": "Account Number", "confidenceScore": 1.0, "coord": {"x": 838, "y": 237, "width": 74, "height": 26}, "type": "Key-value pair", "value": "{'key': 'account no', 'value': '112227'}"}], "confidenceScore": 1.0}
         page_results = get_page_hypothesis(image=im, evidence=evidence, rules=rules)
         print(page_results)
-        print(rules)
+        print('---------------------------------------------------------------------------------')
         page_results = filter_on_where_rules(im, page_results, rules2)
         json.dump(page_results, open(output_folder + (evidence_name), "w"))
         # doc_level_hypothesis.append(page_results)
