@@ -561,9 +561,9 @@ def create_json_structure(table_number, table_borders, border_dict, cell_words, 
                                 "data": cell_wise_data}
 
 
-def ui_format(table_json):
+def ui_format(table_json, lbl):
     ui_data = []
-    print("table json data",table_json)
+    print("table json data", table_json)
     for table_id, data in table_json.items():
 
         # print("&&&&&&&&&&&&&&&&&&&&&&&")
@@ -574,6 +574,8 @@ def ui_format(table_json):
         table_temp["tag"] = str(data["table"]["tags"])
         table_temp["styles"] = {}
         table_temp["type"] = "table"
+        table_temp["label"] = lbl
+
         table_temp["coordinates"] = {"x": str(data["table"]["coord"][1]), "y": str(data["table"]["coord"][0]),
                                      "width": str(data["table"]["coord"][3] - data["table"]["coord"][1]),
                                      "height": str(data["table"]["coord"][2] - data["table"]["coord"][0])}
@@ -618,8 +620,9 @@ def ui_format(table_json):
                                                 "width": str(cell_data["coord"][3] - cell_data["coord"][1]),
                                                 "height": str(cell_data["coord"][2] - cell_data["coord"][0])}
                     temp_row["cells"].append(temp_cell)
-                    print("INDEX ID :",temp_cell["_id"])
-            table_temp["tableRows"].append(temp_row)  # print("final")  # print(table_temp)  # print(json.dumps(table_temp, separators=(',', ':')))  # json.dump(table_temp,"test_json.json")
+                    print("INDEX ID :", temp_cell["_id"])
+            table_temp["tableRows"].append(
+                temp_row)  # print("final")  # print(table_temp)  # print(json.dumps(table_temp, separators=(',', ':')))  # json.dump(table_temp,"test_json.json")
         ui_data.append(table_temp)  # print(table_temp)
     # print('#'*200)
     # print(ui_data)
@@ -627,7 +630,7 @@ def ui_format(table_json):
     # with open("UI_table_added_evidences.json", "w") as out_file:
     # json.dump(ui_data, out_file)
     # exit()
-    print("showing ui data :",type(ui_data), ui_data)
+    print("showing ui data :", type(ui_data), ui_data)
     return ui_data[0]
 
 
@@ -784,7 +787,7 @@ if __name__ == '__main__':
     # print('IMAGE  :', image.shape)
     # print("EVIDENCES :", evidence)
     # print("ALL DATA ", all_data[0])
-    new_created_tables=[]
+    new_created_tables = []
     try:
 
         # print(len(all_data[0]),type(all_data[0]),all_data[0])
@@ -799,8 +802,8 @@ if __name__ == '__main__':
                                                                                       table['coordinates'][
                                                                                           'width'])]], image,
                                                                evidence)
-                new_created_tables.append(ui_format(table_json))
-                print("CREATED SHOWING TABLE :\n",new_created_tables[-1])
+                new_created_tables.append(ui_format(table_json, table['label']))
+                print("CREATED SHOWING TABLE :\n", new_created_tables[-1])
                 print("append done")
             else:
                 structure = get_textlines(evidence, image)
@@ -823,15 +826,17 @@ if __name__ == '__main__':
                 print(table)
                 new_created_tables.append(table)
 
-        all_data[0]['newTables'] = new_created_tables
-        # for each_table in new_created_tables:
+        # all_data[0]['newTables'] = new_created_tables
+        save_tables = []
+        for each_table in new_created_tables:
             # print(':::',type(all_data[0]['tables']))
             # print('LENGTH : :',len(all_data[0]['tables']))
-            # each_table['id'] = get_filename() + str(len(all_data[0]['tables']))
+            each_table['id'] = get_filename() + str(len(all_data[0]['tables']))
             # print("id changed",each_table['id'])
-            # all_data[0]['tables'].append(
-            #     each_table)  # print('FL:',len(all_data[0]['tables']))  # with open("UI_table_added_evidences.json", "w") as out_file:  #     json.dump(tables_data, out_file)\
+            save_tables.append(
+                each_table)  # print('FL:',len(all_data[0]['tables']))  # with open("UI_table_added_evidences.json", "w") as out_file:  #     json.dump(tables_data, out_file)\
         # all_data = list(db.fields.find({"documentId": documentId, "pageId": pageId}))
+        all_data[0]['newTables'] = save_tables
         res = client[client_name]['fields'].update_one({"documentId": documentId, "pageId": pageId},
                                                        {'$set': all_data[0]}, upsert=True)
         print('Tables updated')
