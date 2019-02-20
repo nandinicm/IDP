@@ -823,13 +823,14 @@ if __name__ == '__main__':
                 print(table)
                 new_created_tables.append(table)
 
-        for each_table in new_created_tables:
+        all_data[0]['newTables'] = new_created_tables
+        # for each_table in new_created_tables:
             # print(':::',type(all_data[0]['tables']))
             # print('LENGTH : :',len(all_data[0]['tables']))
-            each_table['id'] = get_filename() + str(len(all_data[0]['tables']))
-            print("id changed",each_table['id'])
-            all_data[0]['tables'].append(
-                each_table)  # print('FL:',len(all_data[0]['tables']))  # with open("UI_table_added_evidences.json", "w") as out_file:  #     json.dump(tables_data, out_file)\
+            # each_table['id'] = get_filename() + str(len(all_data[0]['tables']))
+            # print("id changed",each_table['id'])
+            # all_data[0]['tables'].append(
+            #     each_table)  # print('FL:',len(all_data[0]['tables']))  # with open("UI_table_added_evidences.json", "w") as out_file:  #     json.dump(tables_data, out_file)\
         # all_data = list(db.fields.find({"documentId": documentId, "pageId": pageId}))
         res = client[client_name]['fields'].update_one({"documentId": documentId, "pageId": pageId},
                                                        {'$set': all_data[0]}, upsert=True)
