@@ -903,8 +903,8 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
             ' / '.join(value)) + '"/>'
         tag_id = tag_id + 1
     xml_output += '</line>'
-    xml_output += '</invoice_details><validation_result='
-    if total_amount_calculated==invoice_info_dict['total_current_charges']:
+    xml_output += '</invoice_details><validation result='
+    if str(total_amount_calculated)==str(invoice_info_dict['total_current_charges']):
         xml_output+='"true"/>'
     else:
         xml_output+='"false" value="'+str(total_amount_calculated)+'"/>'
