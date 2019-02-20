@@ -708,13 +708,33 @@ def remove_unicodes_here(val):
         val = ''.join(xx)
     return val.strip()
 
+def get_amount_value(amnt_str):
+    amnt_str =amnt_str.strip()
+    if re.search("^c?r?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\d\.]{1,}[\d,\.]{1,}c?r?$",amnt_str,flags=re.IGNORECASE):
+        # print("true")
+        amt = (re.search("^c?r?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?([\d\.]{1,}[\d,\.]{1,})c?r?$", amnt_str,
+                         flags=re.IGNORECASE).groups()[0])
+        if re.search("(cr|.*\-.*[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\d\.]{1,}[\d,\.]{1,})", amnt_str,
+                     flags=re.IGNORECASE):
+            negative_amt = '-' + amt
+            # print("negative",type(negative_amt),negative_amt)
+            return float(negative_amt)
+        else:
+            # print("positive",type(amt),amt)
+            return float(amt)
+    else:
+        # print('false')
+        return 0
 
 def clean_tables(tables_data):
     all_tables = []
+    sub_amount_calculated_list=[]
     merged_id = 0
+    total_amount_calculated=0
     for enum, each_page in enumerate(tables_data):
         for each_table in each_page:
-            table = {"id": merged_id, 'tag': each_table['tag'], 'rows': []}
+            sub_total_amount_calculated=0
+            table = {"id": merged_id, 'tag': each_table['tag'],'label': each_table['label'], 'rows': []}
             for each_row in each_table['tableRows']:
                 # print("XML ROW DATA", each_row)
                 row_data = {}
@@ -724,10 +744,14 @@ def clean_tables(tables_data):
                         row_data['description'] = each_cell['value']
                     row_data['amount'] = each_cell['value']
                 table['rows'].append(row_data)
-            merged_id = merged_id + 1
+                sub_total_amount_calculated+=get_amount_value(row_data['amount'])
+            sub_amount_calculated_list.append(sub_total_amount_calculated)
 
+            merged_id = merged_id + 1
             all_tables.append(table)
-    return all_tables
+            total_amount_calculated+=sub_total_amount_calculated
+
+    return all_tables,sub_amount_calculated_list,total_amount_calculated
 
 
 def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
@@ -738,10 +762,10 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
     fields = list(db.fields.find({"documentId": document_id}))
     for each_field in fields:
         tables_data.append(each_field['tables'])
-    all_tables = clean_tables(tables_data)
+    all_tables,sub_amount_calculated_list,total_amount_calculated = clean_tables(tables_data)
     tables_xml = ''
-    for info in all_tables:
-        tables_xml += '<line tag_id="' + str(tag_id) + '" item="' + str(info['id']) + '">'
+    for enum,info in enumerate(all_tables):
+        tables_xml += '<line tag_id="' + str(tag_id) + '" item="' + str(info['label']) +'" sub_charges="'+str(sub_amount_calculated_list[enum]) +'">'
         tag_id = tag_id + 1
         for col in info['rows']:
             # print("COLUMN IN TABLES", col)
@@ -752,7 +776,7 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
             tables_xml += '"/>'
             tag_id = tag_id + 1
         tables_xml += '</line>'
-    return tables_xml, tag_id
+    return tables_xml, tag_id,total_amount_calculated
 
 
 def fetch_all_parents(all_fields, relationship_pairs):
@@ -865,7 +889,7 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
         tag_id = tag_id + 1
     xml_output += '</invoice_info> <invoice_details tag_id="' + str(tag_id) + '">'
 
-    table_xml, tag_id = get_table_data_xml(mongo_ip, client_name, document_id, tag_id + 1)
+    table_xml, tag_id, total_amount_calculated = get_table_data_xml(mongo_ip, client_name, document_id, tag_id + 1)
     xml_output += table_xml
     xml_output += '<line tag_id="' + str(tag_id) + '" item="remaining_tags">'
     tag_id = tag_id + 1
@@ -879,7 +903,13 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
             ' / '.join(value)) + '"/>'
         tag_id = tag_id + 1
     xml_output += '</line>'
-    xml_output += '</invoice_details></invoice>'
+    xml_output += '</invoice_details><validation_result='
+    if total_amount_calculated==invoice_info_dict['total_current_charges']:
+        xml_output+='"true"/>'
+    else:
+        xml_output+='"false" value="'+str(total_amount_calculated)+'"/>'
+    xml_output+='</invoice>'
+
     return xml_output
 
 
