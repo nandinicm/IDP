@@ -708,9 +708,10 @@ def remove_unicodes_here(val):
         val = ''.join(xx)
     return val.strip()
 
+
 def get_amount_value(amnt_str):
-    amnt_str =amnt_str.strip()
-    if re.search("^c?r?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\d\.]{1,}[\d,\.]{1,}c?r?$",amnt_str,flags=re.IGNORECASE):
+    amnt_str = amnt_str.strip()
+    if re.search("^c?r?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\d\.]{1,}[\d,\.]{1,}c?r?$", amnt_str, flags=re.IGNORECASE):
         # print("true")
         amt = (re.search("^c?r?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?([\d\.]{1,}[\d,\.]{1,})c?r?$", amnt_str,
                          flags=re.IGNORECASE).groups()[0])
@@ -726,15 +727,36 @@ def get_amount_value(amnt_str):
         # print('false')
         return 0
 
+
+def merge_based_on_label(all_tables,sub_amount_calculated_list):
+    poped_data = []
+    label_dict = {}
+    for enum, each_table in enumerate(all_tables):
+        if each_table['label'] in label_dict.keys():
+            #print("MERGE TABLES NEW",each_table['label'],type(each_table['rows']),each_table['rows'])
+            #print("MERGE TABLES KEYS",label_dict,)
+            #print("MERGE TABLES before",type(all_tables[label_dict[each_table['label']]]['rows']),all_tables[label_dict[each_table['label']]]['rows'])
+
+            all_tables[label_dict[each_table['label']]]['rows'].extend(each_table['rows'])
+            sub_amount_calculated_list[label_dict[each_table['label']]]+=sub_amount_calculated_list[enum]
+            poped_data.append(enum)
+        elif each_table['label'] != '':
+            label_dict[each_table['label']] = enum
+    for each_enum in poped_data:
+        sub_amount_calculated_list.pop(each_enum)
+        all_tables.pop(each_enum)
+    return all_tables,sub_amount_calculated_list
+
+
 def clean_tables(tables_data):
     all_tables = []
-    sub_amount_calculated_list=[]
+    sub_amount_calculated_list = []
     merged_id = 0
-    total_amount_calculated=0
+    total_amount_calculated = 0
     for enum, each_page in enumerate(tables_data):
         for each_table in each_page:
-            sub_total_amount_calculated=0
-            table = {"id": merged_id, 'tag': each_table['tag'],'label': each_table['label'], 'rows': []}
+            sub_total_amount_calculated = 0
+            table = {"id": merged_id, 'tag': each_table['tag'], 'label': each_table['label'], 'rows': []}
             for each_row in each_table['tableRows']:
                 # print("XML ROW DATA", each_row)
                 row_data = {}
@@ -744,14 +766,15 @@ def clean_tables(tables_data):
                         row_data['description'] = each_cell['value']
                     row_data['amount'] = each_cell['value']
                 table['rows'].append(row_data)
-                sub_total_amount_calculated+=get_amount_value(row_data['amount'])
+                sub_total_amount_calculated += get_amount_value(row_data['amount'])
             sub_amount_calculated_list.append(sub_total_amount_calculated)
 
             merged_id = merged_id + 1
             all_tables.append(table)
-            total_amount_calculated+=sub_total_amount_calculated
+            total_amount_calculated += sub_total_amount_calculated
+    all_tables,sub_amount_calculated_list = merge_based_on_label(all_tables,sub_amount_calculated_list)
 
-    return all_tables,sub_amount_calculated_list,total_amount_calculated
+    return all_tables, sub_amount_calculated_list, total_amount_calculated
 
 
 def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
@@ -762,10 +785,11 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
     fields = list(db.fields.find({"documentId": document_id}))
     for each_field in fields:
         tables_data.append(each_field['tables'])
-    all_tables,sub_amount_calculated_list,total_amount_calculated = clean_tables(tables_data)
+    all_tables, sub_amount_calculated_list, total_amount_calculated = clean_tables(tables_data)
     tables_xml = ''
-    for enum,info in enumerate(all_tables):
-        tables_xml += '<line tag_id="' + str(tag_id) + '" item="' + str(info['label']) +'" sub_charges="'+str(sub_amount_calculated_list[enum]) +'">'
+    for enum, info in enumerate(all_tables):
+        tables_xml += '<line tag_id="' + str(tag_id) + '" item="' + str(info['label']) + '" subtotal_amount="' + str(
+            sub_amount_calculated_list[enum]) + '">'
         tag_id = tag_id + 1
         for col in info['rows']:
             # print("COLUMN IN TABLES", col)
@@ -776,7 +800,7 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
             tables_xml += '"/>'
             tag_id = tag_id + 1
         tables_xml += '</line>'
-    return tables_xml, tag_id,total_amount_calculated
+    return tables_xml, tag_id, total_amount_calculated
 
 
 def fetch_all_parents(all_fields, relationship_pairs):
@@ -904,11 +928,11 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
         tag_id = tag_id + 1
     xml_output += '</line>'
     xml_output += '</invoice_details><validation result='
-    if str(total_amount_calculated)==str(invoice_info_dict['total_current_charges']):
-        xml_output+='"true"/>'
+    if str(total_amount_calculated) == str(invoice_info_dict['total_current_charges']):
+        xml_output += '"true"/>'
     else:
-        xml_output+='"false" value="'+str(total_amount_calculated)+'"/>'
-    xml_output+='</invoice>'
+        xml_output += '"false" value="' + str(total_amount_calculated) + '"/>'
+    xml_output += '</invoice>'
 
     return xml_output
 
