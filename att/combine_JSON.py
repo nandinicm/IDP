@@ -656,8 +656,17 @@ def collect_all_fileds(page_id, fields, id_value):
         each_data['children'] = []
         id_value = id_value + 1
         key_val = ast.literal_eval(each_data['value'])
-        dict_xml = {'id': str(id_value), 'tag': each_data['tag'], 'type': each_data['type'], 'key': key_val[0]['key'],
-                    'value': key_val[1]['key'], 'children': []}
+        print(key_val)
+        value_thing=""
+        key_thing=""
+        if len(key_val)==1:
+            value_thing=key_val[0]['key']
+        elif len(key_val)==2:
+            value_thing=key_val[1]['key']
+            key_thing=key_val[0]['key']
+
+        dict_xml = {'id': str(id_value), 'tag': each_data['tag'], 'type': each_data['type'], 'key': key_thing,
+                    'value': value_thing, 'children': []}
         all_fields[page_id + '_' + each_data['_id']] = dict_xml
     return id_value
 
