@@ -657,13 +657,13 @@ def collect_all_fileds(page_id, fields, id_value):
         id_value = id_value + 1
         key_val = ast.literal_eval(each_data['value'])
         print(key_val)
-        value_thing=""
-        key_thing=""
-        if len(key_val)==1:
-            value_thing=key_val[0]['key']
-        elif len(key_val)==2:
-            value_thing=key_val[1]['key']
-            key_thing=key_val[0]['key']
+        value_thing = ""
+        key_thing = ""
+        if len(key_val) == 1:
+            value_thing = key_val[0]['key']
+        elif len(key_val) == 2:
+            value_thing = key_val[1]['key']
+            key_thing = key_val[0]['key']
 
         dict_xml = {'id': str(id_value), 'tag': each_data['tag'], 'type': each_data['type'], 'key': key_thing,
                     'value': value_thing, 'children': []}
@@ -737,24 +737,24 @@ def get_amount_value(amnt_str):
         return 0
 
 
-def merge_based_on_label(all_tables,sub_amount_calculated_list):
+def merge_based_on_label(all_tables, sub_amount_calculated_list):
     poped_data = []
     label_dict = {}
     for enum, each_table in enumerate(all_tables):
         if each_table['label'] in label_dict.keys():
-            #print("MERGE TABLES NEW",each_table['label'],type(each_table['rows']),each_table['rows'])
-            #print("MERGE TABLES KEYS",label_dict,)
-            #print("MERGE TABLES before",type(all_tables[label_dict[each_table['label']]]['rows']),all_tables[label_dict[each_table['label']]]['rows'])
+            # print("MERGE TABLES NEW",each_table['label'],type(each_table['rows']),each_table['rows'])
+            # print("MERGE TABLES KEYS",label_dict,)
+            # print("MERGE TABLES before",type(all_tables[label_dict[each_table['label']]]['rows']),all_tables[label_dict[each_table['label']]]['rows'])
 
             all_tables[label_dict[each_table['label']]]['rows'].extend(each_table['rows'])
-            sub_amount_calculated_list[label_dict[each_table['label']]]+=sub_amount_calculated_list[enum]
+            sub_amount_calculated_list[label_dict[each_table['label']]] += sub_amount_calculated_list[enum]
             poped_data.append(enum)
         elif each_table['label'] != '':
             label_dict[each_table['label']] = enum
     for each_enum in poped_data:
         sub_amount_calculated_list.pop(each_enum)
         all_tables.pop(each_enum)
-    return all_tables,sub_amount_calculated_list
+    return all_tables, sub_amount_calculated_list
 
 
 def clean_tables(tables_data):
@@ -781,7 +781,7 @@ def clean_tables(tables_data):
             merged_id = merged_id + 1
             all_tables.append(table)
             total_amount_calculated += sub_total_amount_calculated
-    all_tables,sub_amount_calculated_list = merge_based_on_label(all_tables,sub_amount_calculated_list)
+    all_tables, sub_amount_calculated_list = merge_based_on_label(all_tables, sub_amount_calculated_list)
 
     return all_tables, sub_amount_calculated_list, total_amount_calculated
 
@@ -907,9 +907,24 @@ def fetch_all_dict(invoice_info_dict, invoice_header_dict, lvl3_res):
     return invoice_info_dict, invoice_header_dict, secondary_dict, remaining_tags
 
 
+def get_country_and_currency_and_address(invoice_header_dict):
+    usa_states = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY",
+                  "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+                  "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA",
+                  "WA", "WV", "WI", "WY", "AS", "DC",
+                  "FM", "GU", "MH", "MP", "PW", "PR", "VI"]
+    if invoice_header_dict['state'] in usa_states:
+        invoice_header_dict['country'] = "United States"
+        invoice_header_dict['currency'] = "USD"
+    if invoice_header_dict['address'] != '':
+        invoice_header_dict['address'] = "PO BOX " + invoice_header_dict['address']
+    return invoice_header_dict
+
+
 def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict, invoice_header_dict, secondary_dict,
                           remaining_tags):
     tag_id = 1
+    invoice_header_dict = get_country_and_currency_and_address(invoice_header_dict)
     xml_output = "<invoice"
     for tag, value in invoice_header_dict.items():
         xml_output += ' ' + str(tag) + '=' + '"' + remove_unicodes_here(str(value)) + '"'
