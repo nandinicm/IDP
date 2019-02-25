@@ -798,7 +798,7 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
     tables_xml = ''
     for enum, info in enumerate(all_tables):
         tables_xml += '<line tag_id="' + str(tag_id) + '" item="' + str(info['label']) + '" subtotal_amount="' + str(
-            round(sub_amount_calculated_list[enum],2)) + '">'
+            round(sub_amount_calculated_list[enum], 2)) + '">'
         tag_id = tag_id + 1
         for col in info['rows']:
             # print("COLUMN IN TABLES", col)
@@ -938,6 +938,7 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
     xml_output += '</invoice_info> <invoice_details tag_id="' + str(tag_id) + '">'
 
     table_xml, tag_id, total_amount_calculated = get_table_data_xml(mongo_ip, client_name, document_id, tag_id + 1)
+    total_amount_calculated = round(total_amount_calculated, 2)
     xml_output += table_xml
     xml_output += '<line tag_id="' + str(tag_id) + '" item="remaining_tags">'
     tag_id = tag_id + 1
@@ -952,7 +953,8 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
         tag_id = tag_id + 1
     xml_output += '</line>'
     xml_output += '</invoice_details><validation result='
-    if str(total_amount_calculated) == str(invoice_info_dict['total_current_charges']):
+    if str(get_amount_value(total_amount_calculated)) == str(
+            get_amount_value(invoice_info_dict['total_current_charges'])):
         xml_output += '"true"/>'
     else:
         xml_output += '"false" value="' + str(total_amount_calculated) + '"/>'
