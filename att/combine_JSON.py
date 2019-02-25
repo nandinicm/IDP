@@ -798,7 +798,7 @@ def get_table_data_xml(mongo_ip, client_name, document_id, tag_id):
     tables_xml = ''
     for enum, info in enumerate(all_tables):
         tables_xml += '<line tag_id="' + str(tag_id) + '" item="' + str(info['label']) + '" subtotal_amount="' + str(
-            sub_amount_calculated_list[enum]) + '">'
+            round(sub_amount_calculated_list[enum],2)) + '">'
         tag_id = tag_id + 1
         for col in info['rows']:
             # print("COLUMN IN TABLES", col)
