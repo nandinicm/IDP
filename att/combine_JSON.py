@@ -724,6 +724,7 @@ def get_amount_value(amnt_str):
         # print("true")
         amt = (re.search("^c?r?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?([\d\.]{1,}[\d,\.]{1,})c?r?$", amnt_str,
                          flags=re.IGNORECASE).groups()[0])
+        amt = ''.join(amt.split(','))
         if re.search("(cr|.*\-.*[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\d\.]{1,}[\d,\.]{1,})", amnt_str,
                      flags=re.IGNORECASE):
             negative_amt = '-' + amt
@@ -953,7 +954,7 @@ def create_xml_for_fields(mongo_ip, client_name, document_id, invoice_info_dict,
         tag_id = tag_id + 1
     xml_output += '</line>'
     xml_output += '</invoice_details><validation result='
-    if str(get_amount_value(total_amount_calculated)) == str(
+    if str(total_amount_calculated) == str(
             get_amount_value(invoice_info_dict['total_current_charges'])):
         xml_output += '"true"/>'
     else:
