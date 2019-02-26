@@ -804,6 +804,9 @@ if __name__ == '__main__':
         #     print(k,v)
         new_tables = (all_data[0]['newTables'])
         for table in new_tables:
+            if 'label' not in table.keys():
+                print('Empty label added')
+                table['label'] = ''
             if table['create_table']:
                 print("Create Table:", table['create_table'])
                 _, table_json = getout_table_cells_information([[table['coordinates']['y'], table['coordinates']['x'], (
