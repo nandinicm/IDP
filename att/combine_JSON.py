@@ -711,7 +711,7 @@ def get_all_fields(mongo_ip, client_name, document_id):
 
 def remove_unicodes_here(val):
     pattern = re.compile(
-        r"(?![A-Za-z]|\d|\s|\.|\:|\%|\\|\)|\(|\"|\@|\!|\#|\$|\%|\^|\*|\-|\+|\_|\=|\{|\}|\[|\]|\;|\'|\?|\>|\<|\,|\`|\~|\||\/).")
+        r"(?![A-Za-z]|\d|\s|\.|\:|\%|\\|\)|\(|\@|\!|\#|\$|\%|\^|\*|\-|\+|\_|\=|\{|\}|\[|\]|\;|\'|\?|\>|\<|\,|\`|\~|\||\/).")
     xx = pattern.split(val)
     if len(xx) > 1:
         val = ''.join(xx)
