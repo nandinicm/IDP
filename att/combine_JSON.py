@@ -752,6 +752,7 @@ def merge_based_on_label(all_tables, sub_amount_calculated_list):
             poped_data.append(enum)
         elif each_table['label'] != '':
             label_dict[each_table['label']] = enum
+    poped_data.sort(reverse=True)
     for each_enum in poped_data:
         sub_amount_calculated_list.pop(each_enum)
         all_tables.pop(each_enum)
