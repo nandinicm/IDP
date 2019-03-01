@@ -561,7 +561,7 @@ def create_json_structure(table_number, table_borders, border_dict, cell_words, 
                                 "data": cell_wise_data}
 
 
-def ui_format(table_json, lbl, _id):
+def ui_format(table_json, lbl,_id):
     ui_data = []
     print("table json data", table_json)
     for table_id, data in table_json.items():
@@ -744,15 +744,14 @@ def create_from_given_data(structure, cell_coor):
         # cv2.rectangle(img, (c[1], c[0]), (c[3], c[2]), (0, 0, 0), 3)  #####  Show Text line
 
         if is_inside(c, cell_coor):
-            # print('TEXTLINE WITH THIS CEll :',textline)
+            #print('TEXTLINE WITH THIS CEll :',textline)
             for itme in (textline.contains["words"]):
-                # print("COORDINATES OF EACH ITEM ARE",itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],itme.coordinates[1][0])
-                # print("INTERSECTION IS :", intersection_area_coord([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],
-                # itme.coordinates[1][0]], cell_coor))
-                # print("AREA OF TEXT IS ::", area_of_patch([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],itme.coordinates[1][0]]))
-                if area_of_patch([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],
-                                  itme.coordinates[1][0]]) == 0:
-                    continue
+                #print("COORDINATES OF EACH ITEM ARE",itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],itme.coordinates[1][0])
+                #print("INTERSECTION IS :", intersection_area_coord([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],
+                                                 #itme.coordinates[1][0]], cell_coor))
+                #print("AREA OF TEXT IS ::", area_of_patch([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],itme.coordinates[1][0]]))
+                if  area_of_patch([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],itme.coordinates[1][0]])==0:
+                        continue
                 if (area_of_patch(
                         intersection_area_coord([itme.coordinates[0][1], itme.coordinates[0][0], itme.coordinates[1][1],
                                                  itme.coordinates[1][0]], cell_coor)) / area_of_patch(
@@ -790,13 +789,13 @@ if __name__ == '__main__':
     # with open(uploadpath + "pages/" + f) as ev:
     with open(os.getenv("HOME") + "/IDP/results/" + documentId + "/words/" + page_name + 'json') as ev:
         evidence = ast.literal_eval(ev.read())
-    # print("\nDOc id:", documentId)
-    # print("\nPage id:", pageId)
-    # print('\nIMAGE  :', image.shape)
-    # print("\nEVIDENCES :", evidence)
-    # print("\nALL DATA ", all_data[0])
+    #print("\nDOc id:", documentId)
+    #print("\nPage id:", pageId)
+    #print('\nIMAGE  :', image.shape)
+    #print("\nEVIDENCES :", evidence)
+    #print("\nALL DATA ", all_data[0])
     new_created_tables = []
-    # print('\nNo. of newly tables to add',len(all_data[0]['newTables']))
+    #print('\nNo. of newly tables to add',len(all_data[0]['newTables']))
     try:
 
         # print(len(all_data[0]),type(all_data[0]),all_data[0])
@@ -820,10 +819,10 @@ if __name__ == '__main__':
             else:
                 structure = get_textlines(evidence, image)
                 print("Create Table:", table['create_table'])
-                table['_id'] = ''.join(table['_id'].split("table-"))
+                table['_id']=''.join(table['_id'].split("table-"))
                 for all_rows in table['tableRows']:
                     for each_cell in all_rows['cells']:
-                        # print('BEFORE VAL :',each_cell['value'])
+                        #print('BEFORE VAL :',each_cell['value'])
                         each_cell['value'] = create_from_given_data(structure, [each_cell['coordinates']['y'],
                                                                                 each_cell['coordinates']['x'], (
                                                                                         each_cell['coordinates'][
@@ -834,7 +833,7 @@ if __name__ == '__main__':
                                                                                             'x'] +
                                                                                         each_cell['coordinates'][
                                                                                             'width'])])
-                        # print('AFTER VAL :',each_cell['value'])
+                        #print('AFTER VAL :',each_cell['value'])
                 print(table)
                 new_created_tables.append(table)
 
