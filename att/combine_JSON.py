@@ -724,7 +724,6 @@ def get_amount_value(amnt_str):
         # print("true")
         amt = (re.search("^c?r?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?([\d\.]{1,}[\d,\.]{1,})c?r?$", amnt_str,
                          flags=re.IGNORECASE).groups()[0])
-        amt = ''.join(amt.split(','))
         if re.search("(cr|.*\-.*[\-\$\s]?[\-\$\s]?[\-\$\s]?[\-\$\s]?[\d\.]{1,}[\d,\.]{1,})", amnt_str,
                      flags=re.IGNORECASE):
             negative_amt = '-' + amt
@@ -741,6 +740,7 @@ def get_amount_value(amnt_str):
 def merge_based_on_label(all_tables, sub_amount_calculated_list):
     poped_data = []
     label_dict = {}
+    first_empty_label=-1
     for enum, each_table in enumerate(all_tables):
         if each_table['label'] in label_dict.keys():
             # print("MERGE TABLES NEW",each_table['label'],type(each_table['rows']),each_table['rows'])
@@ -752,8 +752,17 @@ def merge_based_on_label(all_tables, sub_amount_calculated_list):
             poped_data.append(enum)
         elif each_table['label'] != '':
             label_dict[each_table['label']] = enum
+        elif each_table['label'] == '':
+            if first_empty_label<0:
+                first_empty_label=enum
+            else:
+                all_tables[first_empty_label]['rows'].extend(each_table['rows'])
+                sub_amount_calculated_list[first_empty_label] += sub_amount_calculated_list[enum]
+                poped_data.append(enum)
+    print('POPED ENUM IS :',poped_data)
     poped_data.sort(reverse=True)
     for each_enum in poped_data:
+        print('EACH IS ',each_enum)
         sub_amount_calculated_list.pop(each_enum)
         all_tables.pop(each_enum)
     return all_tables, sub_amount_calculated_list
@@ -767,6 +776,9 @@ def clean_tables(tables_data):
     for enum, each_page in enumerate(tables_data):
         for each_table in each_page:
             sub_total_amount_calculated = 0
+            if 'label' not in each_table.keys():
+                each_table['label']=''
+            #print('LABEL IS::::::::::::::::::::',each_table['label'] )
             table = {"id": merged_id, 'tag': each_table['tag'], 'label': each_table['label'], 'rows': []}
             for each_row in each_table['tableRows']:
                 # print("XML ROW DATA", each_row)
@@ -783,8 +795,9 @@ def clean_tables(tables_data):
             merged_id = merged_id + 1
             all_tables.append(table)
             total_amount_calculated += sub_total_amount_calculated
+    #print("ALL TABLES ARE :::::",all_tables)
     all_tables, sub_amount_calculated_list = merge_based_on_label(all_tables, sub_amount_calculated_list)
-
+    print("ALL TABLES ARE :::::",all_tables)
     return all_tables, sub_amount_calculated_list, total_amount_calculated
 
 
