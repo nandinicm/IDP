@@ -88,7 +88,6 @@ def fetch_words(binary_input, filepath):
                 'numpy_image': image
             }
     elif extension == 'pdf':
-        print("pdf detected")
         pdf = PDF(io.BytesIO(binary_input))
         images = convert_from_bytes(binary_input)
         for e, page in enumerate(pdf.pages):
@@ -100,7 +99,6 @@ def fetch_words(binary_input, filepath):
             try:
                 is_scanned_image = False
                 if "image" in page.objects:
-#                    print("imgobj",len(page.objects["image"]))
                     if len(page.objects["image"]) == 1:
                         imageObject = page.objects["image"][0]
                         x0, x1, top, bottom = (round(float(imageObject[k]) * factor) for k in
@@ -129,16 +127,13 @@ def fetch_words(binary_input, filepath):
                                 text_patch_list.append(text_patch_key)
                 patches = []
                 is_scanned_image = False
-                print("is_scanned_image",is_scanned_image)
                 if not is_scanned_image:
                     for patch in page.extract_words():
                         x0, x1, top, bottom = (round(float(patch[k]) * factor) for k in
                                                ('x0', 'x1', 'top', 'bottom'))
                         patches.append([[top, x0, bottom, x1], patch['text']])
-                print(len(patches))
                 # if len(patches) == 0:
                 #     text_patch_list = get_text_patch_from_image(image)
-
                 result_dict['page_' + str(e)] = {
                     'words': patches,
                     'text_images': text_patch_list,
@@ -170,7 +165,7 @@ if __name__ == "__main__":
     import sys
     root_folder = sys.argv[1]
     image_path = root_folder + sys.argv[2]
-    run_evidence = False
+    run_evidence = True
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(0)
     config_sess = tf.ConfigProto()
@@ -191,7 +186,6 @@ if __name__ == "__main__":
 
     with open(image_path, "rb") as binfile:
         pdf_words, document_name = fetch_words(binfile.read(), image_path)
-        print("pdfwordsdone")
 
         for page_key, val in pdf_words.items():
             page_file = document_name + "_" + page_key.split('_')[-1] + ".json"
@@ -269,10 +263,8 @@ if __name__ == "__main__":
                     evidence_list.append(gv_evidences)
 
                 cv2.imwrite(text_image_folder + document_name + "_" + page_key.split('_')[-1] + ".jpg", text_im)
-#                print("pdf_wrods",val["words"])
                 assembled_evidence = assemble_evidences(im, evidence_list, val["words"], text_patch_list,
                                                         required_evidences)
-#                print("page_level_evidence",assembled_evidence)
                 words_result = dict()
                 words_list = list()
                 words_result['pageNumber'] = int(page_key.split('_')[-1])
@@ -289,11 +281,17 @@ if __name__ == "__main__":
                     word_dict = {'confidenceScore': w[2], 'label': w[1],
                                  'coordinates': {'x': w[0][1], 'y': w[0][0], 'width': (int(w[0][3]) - int(w[0][1])),
                                                  'height': (int(w[0][2]) - int(w[0][0]))}}
+                    if re.search("(cid:\d{1,})",word_dict["label"]):
+                        continue
                     xx=re.findall(r'[a-zA-Z0-9-+=-_]+',word_dict["label"])
                     if len(xx)<1:
                         continue
                     words_list.append(word_dict)
                 if words_list:
                     words_result['confidenceScore'] = total_confidence / len(words_list)
+                    print(words_result['confidenceScore'])
+                    if words_result['confidenceScore'] > 1:
+                        words_result['confidenceScore'] = 1
+                    print(words_result['confidenceScore'])
                 with open(evidence_folder + page_file, "w") as evfile:
                     json.dump(words_result, evfile)
